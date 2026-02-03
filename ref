@@ -1,0 +1,46 @@
+#!/usr/bin/bash
+
+prefix="${PREFIX:-/usr}/share/ref"
+
+cmd="$1"
+filename="$2"
+
+function search_target(){
+	local find_result=$(find $prefix -type f -regex ".*/$1.md")
+	local target
+
+	if [ -z "$find_result" ];then
+		find_result=$(find $prefix -type f -regex ".*/$1")
+	fi
+
+	if [ $(echo "$find_result" | wc -l) -gt 1 ] && [ -t 0 ] ; then
+
+		select target in $find_result; do
+			if [ -n "$target" ]; then
+				echo "$target"
+				break
+			else
+				echo "Invalid selection."
+			fi
+		done
+
+	else
+		echo "$find_result" | head -n 1
+	fi
+
+}
+
+if [ -z "$cmd" ] || [ -z "$filename" ]; then
+	echo "available filename:"
+	echo "$(find $prefix -type f -regex ".*" -printf "%f\n")"
+
+	echo ""
+	echo "Usage: $0 <command> <filename>"
+	echo "e.g.: $0 echo cpp"
+	echo "e.g.: $0 nvim cpp"
+	echo "e.g.: $0 glow cpp"
+	echo "e.g.: $0 microsoft-edge-stable cpp"
+
+else
+	"$cmd" $(search_target "$filename")
+fi

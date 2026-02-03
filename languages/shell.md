@@ -178,12 +178,44 @@
 ```
 
 
+# 权限
+
+```shell
+普通文件(-)
+目录文件(d)
+字符设备(c)
+块设备(b)
+符号链接文件(l)
+管道文件(p)
+
+-rwx:无读写执行，2进制位表示，3个二进制位凑8进制
+
+u:owner
+g:group
+o:other
+a:all ugo
+
+<permission> ::= <type> <owner> <group owner> <other>
+<type> ::= '-'|'d'|'c'|'b'|'l'|'p'
+
+<owner> ::= 000 | ... | 777
+<group_owner> ::= 000 | ... | 777
+<other> ::= 000 | ... | 777
+```
+
+# 掩码
+
+```shell
+文件:基准0666, 令0666 & ~$(umask)为最终权限
+目录:基准0777, 令0777 & ~$(umask)为最终权限
+```
 
 
 <font color=#ff0044>
 <center>Written by Vito Devlin:tada:</center>
 <center>condexpr01@outlook.com</center>
 </font>
+
 
 
 

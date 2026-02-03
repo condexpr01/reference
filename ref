@@ -37,6 +37,7 @@ if [ -z "$cmd" ] || [ -z "$filename" ]; then
 	echo ""
 	echo "Usage: $0 <command> <filename>"
 	echo "e.g.: $0 echo cpp"
+	echo "e.g.: ls -l $($0 echo cpp)"
 	echo "e.g.: $0 nvim cpp"
 	echo "e.g.: $0 glow cpp"
 	echo "e.g.: $0 microsoft-edge-stable cpp"

@@ -23,7 +23,7 @@
                  | <export_declaration>
 
 <module_declaration> ::= 
-   ["export"] "module" <module_name> [<module_partition>] [<attribute_specifier_seq>] ';'
+   ["export"] "module" [<module_name>] [<module_partition>] [<attribute_specifier_seq>] ';'
 
 (***************************************)
 
@@ -197,8 +197,8 @@
                        | <braced_init_list>
 
 <braced_init_list> ::= '{' <initializer_list> [','] '}'
-                       '{' <designated_initializer_list> [','] '}'
-                       "{}"
+                     | '{' <designated_initializer_list> [','] '}'
+                     | "{}"
 
 (************************************)
 <designated_initializer_list> ::= <designated_initializer_clause>
@@ -2399,9 +2399,10 @@ alignof(type)
 > <font color=#39c5bb>在`<asm_declaration>`中</font>    
 > <font color=#39c5bb>Click :[https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html](https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html)</font>    
 
-
 ```cpp
 //gcc as汇编器
+asm asm-qualifiers ( AssemblerInstructions )
+
 asm asm_qualifiers ( AssemblerTemplate 
                    : OutputOperands 
                  [ : InputOperands
@@ -2412,7 +2413,22 @@ asm asm_qualifiers ( AssemblerTemplate
                       : InputOperands
                       : Clobbers
                       : GotoLabels)
+
+/*************
+at&t:
+	先src后dst
+	指令跟后缀(`b`(byte),`w`(word),`l`(longword),`q`(quadword))表示operator size
+	寄存器有前缀`%`
+	立即数有前缀`$`
+	地址也有前缀`$`
+	直接寻址,解引用地址直接用`地址数字`
+	间接寻址,解引用寄存器内地址用`()`
+	用c语法的`0x`前缀表示十六进制数
+	rep重复指令得分行
+
+**************/
 ```
+
 
 ### <font color=#ffe211> :rocket: cv限定符 </font>
 
@@ -2638,8 +2654,8 @@ noexcept(expression)
 |private|public|protected|
 |final|trivially\_relocatable\_if\_eligible|replaceable\_if\_eligible|
 |virtual|override|friend|
-|this|mutable|default|
-|delete|||
+|explicit|this|mutable|
+|default|delete||
 
 </font>
 
@@ -2656,6 +2672,8 @@ class_head { member_specification }
 //类性质为replaceable_if_eligible
 //支持移动、拷备构造,析构安全,
 //可不析构旧元素而直接覆盖
+
+//explicit阻止隐式转换，必须显示的转换
 
 //基类子句可以指定继承模型的列表
 //虚基类virtual指定虚继承
@@ -2716,7 +2734,7 @@ class_head { member_specification }
 > <font color=#ffa500>析取:||</font>    
 > <font color=#ffa500>原子约束:不可分割</font>    
 
-> <font color=#ffa500>`requires_expression`产生描述约束的bool类型的纯右值表达式</font>    
+> <font color=#ffa500>`requires_expression`产生描述约束的bool类型的纯右值表达式, 应该使用concept来保留其值</font>    
 > <font color=#ffa500>`requires_clause`指定对各模板或对函数声明的约束,成为模板接口的一部分</font>    
 > <font color=#ffa500>concept为约束指定的对模板的要求具名集合,作约束时成为模板接口的一部分</font>    
 > <font color=#ffa500>概念作为谓词时,`C<a1,a2,...,an> T`等价于`C<T,a1,a2,...,an>` </font>    
@@ -2727,7 +2745,7 @@ class_head { member_specification }
 
 |template|concept|typename|
 |:---:|:---:|:---:|
-|requires|this||
+|requires|||
 
 </font>
 
@@ -2858,12 +2876,16 @@ type_id{expression}
 
 ### <font color=#ffe211> :rocket: 协程 </font>
     
-> <font color=#39c5bb>`co_await`期望awaiter对象(awaitable表示可以得到awaiter的对象) </font>    
-> <font color=#39c5bb>不销毁的话`coroutine_handle`句柄的生命周期在外围作用域 </font>    
+> <font color=#39c5bb>以co_await,co_yield,co_return控制的函数为协程</font>    
+> <font color=#39c5bb>调用时返回类型满足std::coroutine_traits的requires</font>    
+> <font color=#39c5bb>会按规则顺序调用promise_type里的函数,以`协程体中的promise_type`表中写的规则顺序</font>    
+
+> <font color=#39c5bb>`co_await`概述:假设awaitalbe,获取awaiter,流水线调用(await_ready->await_suspend->调用方->await_resume)</font>    
+> <font color=#39c5bb>协程不销毁的话`coroutine_handle`句柄的生命周期在外围作用域 </font>    
 
 <font color=#ffa500>
 
-|awaiter对象中|返回|
+|awaiter写法: awaiter对象中|返回|
 |---|---|
 |`await_ready()`|(bool)true:准备好立即执行协程体<br>(bool)false:准备挂起,调用`await_suspend`|
 |`await_suspend(std::coroutine_handle)`|(bool)true:挂起,返回控制给调用方<br>(bool)false:不挂起<br>void:挂起<br>coroutine\_handle<>:转到调用句柄内resume()|
@@ -2871,31 +2893,46 @@ type_id{expression}
 
 </font>
 
-|<font color=#39c5bb>协程执行时:</font>|
+<font color=#ffa500>
+
+
+|协程体的promise\_type对象写法: promise\_type中||
+|---|---|
+|`promise_type构造函数`|协程开始时|
+|`get_return_object(void)`|协程开始时,返回类型与协程必须一致,<br>通常返回由协程句柄`std::coroutine_handle<promise_type>::from_promise(*this)`<br>构造产生的协程体临时对象|
+|`awaiter/awaitable initial_suspend(void)`|协程开始时|
+|`awaiter/awaitable yield_value(expr)`|yield时调用|
+|`awaitable await_transform(expr)`|转换awaitable|
+|`void unhandled_exception(void)`|异常时调用|
+|`awaiter/awaitable final_suspend(void)`|结束时调用|
+|`promise_type析构函数`|协程状态被销毁时调用|
+|`void return_void(void)`|`co_return`时|
+|`void return_value(expr)`|`co_return`时|
+
+</font>
+
+|<font color=#39c5bb>协程体中的promise\_type: 在协程执行时:</font>|
 |---|
 |<font color=#ffa500>`operator new`分配协程状态对象</font>|
 |<font color=#ffa500>所有`函数形参复制`到协程状态中</font>|
 |<font color=#ffa500>调用promise\_type对象的`构造函数`</font>|
 |<font color=#ffa500>调用promise\_type.`get_return_object()`,保存结果在局部变量中<br>从initial\_suspend挂起时返回作为函数返回值</font>|
 |<font color=#ffa500>调用co\_await promise\_type.`initial_suspend()`</font>|
-|<font color=#ffa500>`co_await`恢复时开始执行协程体</font>|
+|<font color=#ffa500>`co_await`恢复时开始执行协程函数代码</font>|
 
-<font color=#ffa500>
-
-|promise\_type对象中||
+||<font color=#39c5bb>协程体中的promise\_type: 未捕获的异常结束时</font>    |
 |---|---|
-|`构造函数(自定义参数)`|协程开始时|
-|`get_return_object(void)`|协程开始时,返回任意|
-|`awaiter/awaitable initial_suspend(void)`|协程开始时|
-|`void return_void(void)`|`co_return`时|
-|`void return_value(expr)`|`co_return`时|
-|`awaiter/awaitable final_suspend(void)`|结束时调用|
-|`void unhandled_exception(void)`|异常时调用|
-|`awaitable await_transform(expr)`|转换awaitable|
-|`析构函数()`|协程状态被销毁时调用|
-|`awaiter/awaitable yield_value(expr)`|yield时调用|
+|1| <font color=#ffa500>调用promise\_type.unhandled\_exception:</font>|
+|2| <font color=#ffa500>调用co\_await promise\_type.final\_suspend()</font>    |
+| | <font color=#ffa500>final\_suspend返回的awaiter不挂起会销毁协程状态,析构中不应该再次destroy</font>    |
 
-</font>
+||<font color=#39c5bb>协程体中的promise\_type: 协程状态被销毁时</font>    |
+|---|---|
+|1| <font color=#ffa500>调用promise\_type的析构函数</font>|
+|2| <font color=#ffa500>调用各个函数形参副本的析构函数</font>|
+|3| <font color=#ffa500>调用operator delete</font>|
+|4| <font color=#ffa500>转移执行回到调用方</font>|
+
 
 
 <font color=#ffa500>
@@ -2906,11 +2943,11 @@ type_id{expression}
 |await\_suspend的参数|`await_suspend(std::coroutine_handle<>)`|
 |提前放在协程函数返回类型中的句柄||
 
-|数据交互||
+|数据交互(通过改变协程状态进行,需要写机制)||
 |---|---|
 |通过句柄读取promise\_type|`handle.promise()`|
-|awaiter中的await\_suspend中||
-|通过`co_yield`||
+|通过`co_await`改变协程状态||
+|通过`co_yield`改变协程状态||
 
 </font>
 
@@ -2935,7 +2972,7 @@ type_id{expression}
 ||<font color=#ffa500>返回false:恢复当前协程</font>     |
 ||<font color=#ffa500>返回handle:调用handle.resume()</font>     |
 ||<font color=#ffa500>抛出异常:捕捉异常,恢复协程并立即重抛</font> |    
-|5| <font color=#ffa500>恢复时调用awaiter.await\_resume():</font>    |
+|5| <font color=#ffa500>从句柄的resume函数恢复时,调用awaiter.await\_resume():</font>    |
 ||<font color=#ffa500>返回值作为co\_await cast\_expression表达式结果</font>     |
 
 ||<font color=#39c5bb>`co_yield`处于`yield_expression`</font>    |
@@ -2952,29 +2989,16 @@ type_id{expression}
 |2| <font color=#ffa500>以栈顺序销毁所有自动存储期的变量</font>    |
 |3| <font color=#ffa500>调用co\_await promise\_type.final\_suspend()</font>    |
 
-||<font color=#39c5bb>未捕获的异常结束时</font>    |
-|---|---|
-|1| <font color=#ffa500>调用promise\_type.unhandled\_exception:</font>|
-|2| <font color=#ffa500>调用co\_await promise\_type.final\_suspend()</font>    |
-| | <font color=#ffa500>final\_suspend返回的awaiter不挂起会销毁协程状态,析构中不应该再次destroy</font>    |
-
-||<font color=#39c5bb>协程状态被销毁时</font>    |
-|---|---|
-|1| <font color=#ffa500>调用promise\_type的析构函数</font>|
-|2| <font color=#ffa500>调用各个函数形参副本的析构函数</font>|
-|3| <font color=#ffa500>调用operator delete</font>|
-|4| <font color=#ffa500>转移执行回到调用方</font>|
 
 ```cpp
-//协程返回值要求有promise_type类成员(承诺对象)
-//然后为其设置类型别名
+//协程函数：返回协程体,要求有名为promise_type类成员且满足要求(承诺对象)
 template <typename _Result, typename... _ArgTypes>
 	requires requires { typename _Result::promise_type; }
 	struct coroutine_traits{
 		using promise_type = typename _Result::promise_type;
 	};
 
-//协程状态包含：
+//协程状态(通过协程句柄访问)包含：
 //承诺对象，按值复制的各个形参
 //当前暂停点的表示（恢复时从何处继续,销毁时有哪些局部变量
 //生存期跨过当前暂停点的局部变量和临时量
@@ -3000,7 +3024,7 @@ template <>
 		return *this;
       }
 
-	  //句柄地址
+	  //句柄地址, 可以用给from_address构建出句柄
       constexpr void* address() const noexcept { return _M_fr_ptr; }
 
 	  //从地址生成句柄
@@ -3067,16 +3091,18 @@ co_return [expr_or_braced_init_list];
 <font color=#ffa500>
 
 ```cpp
-//表达式的值类别是xvalue产生T&&
-//表达式的值类别是lvalue产生T&
+//万能引用(右值引用+自动推导): auto&&
+//能引用左值也能引用右值
+
+//表达式的值类别是xvalue产生T&&(右值引用)
+//表达式的值类别是lvalue产生T&(左值引用)
 //表达式的值类别是prvalue产生T
 //
-//expression为
-//id_expression或postfix_expression中类成员访问时
+//expression为id_expression或postfix_expression中类成员访问时
 //取实体的声明类型
-//但加括号会以表达式的规则
-//decltype((id_expression))不同于decltype(id_expression)
-//decltype((id_expression))产生的是引用
+//但加括号会以认为是表达式的规则
+//decltype((id_expression))可能不同于decltype(id_expression)
+//decltype((id_expression))用表达式规则产生
 decltype(expression)
 ```
 
@@ -3092,8 +3118,8 @@ decltype(expression)
 
 //new(args...) T调用
 //operator new(sizeof(type_id),args...)的写法
-//type_id或new_type_id为非数组时函数名为new
-//type_id或new_type_id为数组时函数名为new[]
+//type_id或new_type_id为非数组时函数名为operator new
+//type_id或new_type_id为数组时函数名为operator new[]
 //可以在申请空间
 //可以在提供的空间中分配
 //可以指定对齐
@@ -3396,6 +3422,7 @@ sizeof... (identifier)
 //typeid需要使用头typeinfo
 //返回为std::type_info的类
 //获取运行时类型信息RTTI(run-time type info)
+//但RTTI是编译时生成的，typeid内的expression并不会被执行
 typeid(expression)
 typeid(type_id)
 
@@ -3454,7 +3481,8 @@ typeid(type_id)
 > <font color=#39c5bb> </font>    
 
 ```cpp
-
+//形参包用在模版中
+//相比c的stdarg.h更安全，功能更丰富
 <template_argument_list> ::= <template_argument> ["..."]
                            | {',' <template_argument_list> }
 
@@ -3467,8 +3495,9 @@ typeid(type_id)
                        | <concept_tt_parameter>
 ***************************************/
 
-//parameter_declaration中
-//declarator中noptr_declarator中
+//parameter_declaration中的
+//declarator中的
+//noptr_declarator中的
 //declarator_id
 //可选为包名声明符
 ["..."] id_expression
@@ -3489,16 +3518,19 @@ template_head type_parameter_key [identifier] type_tt_parameter_default
 template_head auto [...] [identifier]
 template_head auto       [identifier] = [nested_name_specifier] template_name
 
-//把类型包中的某个类型当作类型说明符
+//用"..."可以把包展开为","分隔的列表,c++2c extension可用下标语法在specifier中
 //<pack_index_specifier> ::= <typedef_name> "..." '[' <constant_expression> ']'
 
-//包下标展开
+//包下标展开表达式,可用c++2c extension的下标语法在expressoin中
 //<pack_index_expression> ::= <id_expression> "..." '[' <constant_expression> ']'
+id_expression ... [constant_expression]
 
-//折叠表达式
-//fold_expression
+//折叠表达式,fold_expression
+//一元折叠表达式：展开为fold_operator分隔的列表
 (cast_expression fold_operator ...)
 (... fold_operator cast_expression)
+//二元折叠表达式：和一元一样，但可以多个cast_expression作为初始值,防空值等
+//有两个fold_operator但必须保持相同
 (cast_expression fold_operator ... fold_operator cast_expression )
 
 //fold_operator 
@@ -3602,6 +3634,10 @@ this
 
 //保有所有被复制捕获的实体的副本的无名非静态数据成员
 闭包类型::捕获    
+
+
+//闭包类型是不具名的，通常得用auto来取得
+//传递的闭包类型应当使用requires检查是否能调用等
 ```
 
 
@@ -3620,7 +3656,7 @@ this
 ```cpp
 //模块声明有export为模块接口单元，其它模块为实现单元
 //
-[export] module module_name [module_partition] [attribute_specifier_seq] ;
+[export] module [module_name] [module_partition] [attribute_specifier_seq] ;
 
 //导出声明定义，使可以导出到其他翻译单元
 export name_declaration
@@ -3638,15 +3674,20 @@ import header_name      [attribute_specifier_seq] ;
 
 //导入模块并使可以导出到其他翻译单元
 export module_import_declaration
+```
 
+> <font color=#39c5bb> cppm文件结构顺序: </font>    
 
-//全局模块片段前缀
-//存在时必须为模块内首个声明
-//无法导入标头时包含
-//在module_declaration结束
-module;
-[预处理指令序列]
+```cpp
+//(可选的)全局模块片段前缀, 存在时必须为模块内首个声明
+//无法导入标头时包含, 结束于遇到module_declaration
+[module;
+[预处理指令序列]]
+
+//一个cppm只能有一个module_name和多个分区module_partition
+//在片段中的declaration不同于普通cpp，具体而言会有限制
 <module_declaration>
+[<declaration>]
 
 //private是个特别的分区,为私有模块片段
 //不会把内容暴露给导入方,同名模块中可以互相导入
@@ -3954,7 +3995,7 @@ return 返回具有与返回类类型类型相同的名字
 ```cpp
 //resource acquisition is initialization
 //资源获取即初始化RAII
-//利用对象的禁猎都和析构自动管理资源
+//利用对象构造和析构自动管理资源
 //将资源的生命周期与一个对象的生存期相绑定
 ```
 
@@ -3962,13 +4003,12 @@ return 返回具有与返回类类型类型相同的名字
 
 ```cpp
 //curiously recurring template pattern
-//奇特重现模板模式CRTP
-//子类作为模板参数传给父类
-//静态多态,代码复用
-//减少运行时多态开销
+//奇特递归模版模式CRTP
+//核心: 将派生类的作为基类的模版参数
+//以减少多态带来的开销
 
-//运行时多态开销:vptr(虚指针)指向vtable(虚表)
-//调用函数时读取vptr再跳转到表中的函数指针
+//运行时多态开销: vptr(虚指针)指向vtable(虚表)
+//调用函数时需要读取vptr再跳转到表中的函数指针
 ```
 
 ## <font color=#ffe211> :sparkles: PIMPL</font>
@@ -3986,8 +4026,10 @@ return 返回具有与返回类类型类型相同的名字
 
 ```cpp
 //3:析构、(&)[复制构造、复制赋值operater=]，三者同时定义
+
 //5:析构、(&)[复制构造、复制赋值operater=]、
 ////     (&&)[移动构造、移动赋值operater=],(cpp11+)五者同时定义
+
 //0:如果类不直接管理资源(内存、文件、互斥锁等)，
 ////那就定义0个特殊成员函数(析构/拷贝/移动/赋值)
 ```

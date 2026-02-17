@@ -3575,7 +3575,8 @@ id_expression ... [constant_expression]
 ### <font color=#ffe211> :rocket: 闭包 </font>
 
 > <font color=#39c5bb>`lambda_expression`是`primary_expression`的一种</font>    
-> <font color=#39c5bb>lambda表达式返回闭包对象(类类型,闭包类型)</font>    
+> <font color=#39c5bb>lambda表达式返回function对象 </font>    
+> <font color=#39c5bb>lambda表达式的类型可以由头`functional`中模版`std::function`获得</font>    
 > <font color=#39c5bb>闭包类型::operator()</font>    
 > <font color=#39c5bb>闭包类型::operator 返回类型(\*)() </font>    
 > <font color=#39c5bb>闭包类型::operator 闭包类型() </font>    
@@ -3636,7 +3637,8 @@ this
 闭包类型::捕获    
 
 
-//闭包类型是不具名的，通常得用auto来取得
+//闭包类型是不具名的function对象，通常得用auto来取得
+//也可以通过std::function<lambda函数类型签名>获得
 //传递的闭包类型应当使用requires检查是否能调用等
 ```
 
@@ -3940,6 +3942,55 @@ do{
 
 	operation();
 }while(0);
+```
+
+## <font color=#ffe211> :sparkles: 模版推导 </font>
+> <font color=#39c5bb>用推导的方式在编译期获得模版参数</font>
+
+```cpp
+//e.g.
+using std::index_sequence;
+using std::index_sequence_for;
+
+template <size_t ...index>
+inline void template_derive(index_sequence<index...>){
+	//这里可以使用index...来展开参数包
+}
+
+//call
+template <typename ...args>
+void eg(){
+	template_derive(index_sequence_for<args...>{});
+}
+```
+
+## <font color=#ffe211> :sparkles: 指针 </font>
+```cpp
+//栈上的变量用普通指针
+//堆上的变量用智能指针
+
+//栈上的变量会在作用域后，自动销毁
+//esp会回到ebp的位置，由leave完成
+//栈本来就是一种智能delete
+//能用栈的情况应当优先，这是高性能的
+
+//堆上的空间需要手动管理，
+//没有栈的机制，
+//但可以利用对象的机制(shared_ptr, unique_ptr, weak_ptr)，
+//对象会自动析构, 以减少难以排查的故障
+
+//unique_ptr没有引用计数，自动delete
+//shared_ptr有引用计数，计数为0时delete
+//weak_ptr有引用计数，但不会用来决定delete
+////当出现循环引用的时候shared_ptr会泄漏，应当用weak_ptr
+
+//更安全的高性能的
+//shared_ptr/weak_ptr用make_shared
+//unique_ptr用make_unique
+
+//cpp20前，shared_ptr指向数组需要自行写deleter作为第二个参数
+
+//非标扩展__restrict__是保证指针唯一指向的保证，和unique_ptr语义不同
 ```
 
 ## <font color=#ffe211> :sparkles: namespace+尾递归 </font>
@@ -8006,7 +8057,8 @@ namespace std {
   template<class T> struct hash;
   template<class T> struct hash<optional<T>>;
 }
-类模板 std::optional
+
+//类模板 std::optional
 namespace std {
   template<class T>
   class optional {
@@ -8113,7 +8165,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: tuple </font>
+### <font color=#ffe211>:rocket: tuple/元组 </font>
 ```cpp
 #include <compare>
  
@@ -8137,7 +8189,7 @@ namespace std {
   template<class... Tuples>
     constexpr tuple<CTypes...> tuple_cat(Tuples&&...);
  
-  // 以参数的 tuple 调用函数
+  // 以参数的 tuple 调用函数(tuple没有迭代器，但可以用这个)
   template<class F, class Tuple>
     constexpr decltype(auto) apply(F&& f, Tuple&& t);
  
@@ -8974,7 +9026,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: variant </font>
+### <font color=#ffe211>:rocket: variant/安全的union </font>
 ```cpp
 #include <compare>
  
@@ -11163,6 +11215,7 @@ namespace std {
 ```
 
 ### <font color=#ffe211>:rocket: exception </font>
+
 ```cpp
 namespace std {
   class exception;
@@ -11223,6 +11276,59 @@ namespace std {
  
   template<class T> [[noreturn]] void throw_with_nested(T&& t);
   template<class E> void rethrow_if_nested(const E& e);
+}
+```
+
+> <font color=#39c5bb>exception层级</font>    
+
+```json
+{
+"nested_exception":{},
+"std::exception": {
+	"has_what": true,
+	"has_code": false,
+	"children": {
+		"std::bad_alloc": {
+			"has_what": true,
+			"has_code": false,
+			"children": {
+				"std::bad_array_new_length":
+					{"has_what": true, "has_code": false}
+			}
+		},
+		"std::bad_cast": {"has_what": true, "has_code": false},
+		"std::bad_typeid": {"has_what": true, "has_code": false},
+		"std::bad_exception": {"has_what": true, "has_code": false},
+		"std::logic_error": {
+			"has_what": true,
+			"has_code": false,
+			"children": {
+				"std::invalid_argument": {"has_what": true, "has_code": false},
+				"std::domain_error": {"has_what": true, "has_code": false},
+				"std::length_error": {"has_what": true, "has_code": false},
+				"std::out_of_range": {"has_what": true, "has_code": false}
+			}
+		},
+		"std::runtime_error": {
+			"has_what": true,
+			"has_code": false,
+			"children": {
+				"std::overflow_error": {"has_what": true, "has_code": false},
+				"std::underflow_error": {"has_what": true, "has_code": false},
+				"std::range_error": {"has_what": true, "has_code": false},
+				"std::system_error": {
+					"has_what": true,
+					"has_code": true,
+					"children": {
+						"std::filesystem::filesystem_error": 
+							{"has_what": true, "has_code": true}
+					}
+				}
+			}
+		},
+		"std::ios_base::failure": {"has_what": true, "has_code": true}
+	}
+}
 }
 ```
 
@@ -11928,6 +12034,32 @@ int iswpunct(wint_t wc);//[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]
 ```
 
 ### <font color=#ffe211>:rocket: format </font>
+
+```ebnf
+(* 需要'{'或'}'时需要转义：'{{'或'}}' *)
+<format_string> ::= "{" [<arg_id>] [":" <format_spec>] "}"
+
+(***************************************)
+<arg_id>        ::= <integer>
+<format_spec>   ::= 
+	[[<fill>] <align>] [<sign>] ["#"] ["0"] [<width>] ["." <precision>] [<type>]
+
+(***************************************)
+<integer>       ::= [0-9]+
+<fill>          ::= <character_except_brace> (* 不能是 "{" 或 "}" *)
+<align>         ::= "<" | ">" | "^"          (* < 左对齐, > 右对齐, ^ 居中 *)
+<sign>          ::= "+" | "-" | " "
+<width>         ::= <integer>
+<precision>     ::= <integer>
+<type>          ::= "b" | "B" | "d" | "o" | "x" | "X"              (* 整数 *)
+                  | "a" | "A" | "e" | "E" | "f" | "F" | "g" | "G"  (* 浮点 *)
+                  | "s" | "c" | "p" | "?"                          (* 其他 *)
+
+(***************************************)
+<character_except_brace> ::= <any_unicode_char> - ("{" | "}")
+
+```
+
 ```cpp
 namespace std {
   // 格式化函数
@@ -13028,7 +13160,7 @@ namespace std {
 ```
 
 ## <font color=#ffe211>:sparkles: 容器库 </font>
-### <font color=#ffe211>:rocket: array </font>
+### <font color=#ffe211>:rocket: array/数组 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -13132,7 +13264,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: deque </font>
+### <font color=#ffe211>:rocket: deque/双端队列 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -13278,7 +13410,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: flat\_map </font>
+### <font color=#ffe211>:rocket: flat\_map/并行数组 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -13927,7 +14059,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: forward\_list </font>
+### <font color=#ffe211>:rocket: forward\_list/单向链表 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -14083,7 +14215,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: list </font>
+### <font color=#ffe211>:rocket: list/双向链表 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -14247,7 +14379,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: map </font>
+### <font color=#ffe211>:rocket: map/RBTree </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -15125,7 +15257,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: queue </font>
+### <font color=#ffe211>:rocket: queue/队列 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -15323,7 +15455,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: set </font>
+### <font color=#ffe211>:rocket: set/RBTree </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -15828,7 +15960,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: stack </font>
+### <font color=#ffe211>:rocket: stack/栈 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -15920,7 +16052,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: unordered\_map </font>
+### <font color=#ffe211>:rocket: unordered\_map/hashmap </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -16469,7 +16601,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: unordered\_set </font>
+### <font color=#ffe211>:rocket: unordered\_set/hashmap </font>
 ```cpp
 #include <compare>
 #include <initializer_list>
@@ -16964,7 +17096,7 @@ namespace std {
 }
 ```
 
-### <font color=#ffe211>:rocket: vector </font>
+### <font color=#ffe211>:rocket: vector/动态数组 </font>
 ```cpp
 #include <compare>
 #include <initializer_list>

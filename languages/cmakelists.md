@@ -685,7 +685,9 @@ target_link_directories(<target> [BEFORE]
   <INTERFACE|PUBLIC|PRIVATE> [items1...]
   [<INTERFACE|PUBLIC|PRIVATE> [items2...] ...])
 
-target_link_libraries(<target> ... <item>... ...)
+target_link_libraries(<target>
+  {INTERFACE|PUBLIC|PRIVATE} <item>...
+  [{INTERFACE|PUBLIC|PRIVATE} <item>...]...)
 
 target_link_options(<target> [BEFORE]
   <INTERFACE|PUBLIC|PRIVATE> [items1...]

@@ -409,6 +409,9 @@
 
 ## <font color=#ffe211> :sparkles: 字符串算法</font>
 
+* <font color=#39c5bb> :rocket: BMH</font>
+```cpp
+```
 
 * <font color=#39c5bb> :rocket: exKMP,KMP</font>
 

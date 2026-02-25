@@ -3933,15 +3933,16 @@ void va_end(va_list ap);//清理va_list对象
 ## <font color=#ffe211> :sparkles: 卫语句 </font>
 
 ```c
-do{
-	if(exp1)break;
-	if(exp2)break;
-	if(exp3)break;
+if (expr0) do{
+	if(expr1)break;
+	if(expr2)break;
+	if(expr3)break;
 	//...
-	if(expn)break;
+	if(exprn)break;
 
 	operation();
 }while(0);
+
 ```
 
 ## <font color=#ffe211> :sparkles: 模版推导 </font>

@@ -3945,11 +3945,19 @@ if (expr0) do{
 
 ```
 
-## <font color=#ffe211> :sparkles: 模版推导 </font>
-> <font color=#39c5bb>用推导的方式在编译期获得模版参数</font>
+## <font color=#ffe211> :sparkles: CTAD </font>
+> <font color=#39c5bb>Class Template Argument Deduction</font>  
+> <font color=#39c5bb>用推导的方式在编译期获得模版参数</font>    
 
 ```cpp
-//e.g.
+//e.g.1
+std::array arr={
+	std::pair{"a","A"},
+	std::pair{"b","B"}
+	std::pair{"c","C"}
+};
+
+//e.g.2
 using std::index_sequence;
 using std::index_sequence_for;
 
@@ -4688,11 +4696,11 @@ namespace std {
 
 |时区||
 |---|---|
+|`zoned_time` `zoned_seconds`|类,转换为时区时间|
 |`const time_zone *current_zone()`|获取当前时区|
 |`const time_zone *locate_zone(string_view tz_name)`|获取`tz_name`的时区|
 |`const tzdb& get_tzdb()`|访问数据库|
 |`tzdb_list& get_tzdb_list()`|访问数据库|
-|`zoned_time` `zoned_seconds`|类,转换为时区时间|
 
 </font>
 

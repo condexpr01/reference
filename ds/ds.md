@@ -362,7 +362,7 @@
 (* 递推:从上一个推导下一个 *)
 (* 递归:问题可以被看成某个单元,产生的子问题也可以看成这个单元 *)
 
-(* 二分:排序,循环取中位,分出左右 *)
+(* 二分:排序,循环与中位比,分出左右,直到区间锁定长度小于等于2,处理尾状态 *)
 (* 倍增:用2^[0,n]长度作为区间,指数作为下标,任意区间可按其bit位对应,单维复杂度降到logn *)
 
 (* 分治:复杂问题分解为更小的子问题求解 *)
@@ -556,50 +556,14 @@ struct st_sam {
 * <font color=#39c5bb> :rocket: MANACHER </font>
 
 ```cpp
-//回文:从前和后遍历结果一样
-//求最大回文需要对n个字符间插入字符(n+1个),使总数变为奇数2n+1
+//回文:从前和后遍历结果一样, 中心对称
+//求回文需要对n个字符间插入字符(n+1个),使总数变为奇数2n+1
 
-//右端最远子回文为c,其回文半径cr=d[c];当前位置i,回文半径ir=d[i]
-//i在半径外时:从回文长ir=1扩展
-//i+d[i']-1(镜像右端),c+d[c]-1(最远右端)
-//i在半径内时:i+d[i']-1 <  c+d[c]-1,则d[i]=d[i']
-//           :i+d[i']-1 >= c+cr-1,则ir从c+cr-i往外扩
-
-//string s = "#1#2#3#2#1#";
-//int n = s.length();
-//int *d = new int[n];
-int c=0,cr=1;d[0]=1;//d[0]
-
-for (int i=1,ir; i<= n-1 ; i++) {//d[1,n-1]
-
-	if (i>c+cr-1)ir=1;//i在c开始回文cr-1外,从1长开始扩展
-
-	//i在c开始回文cr-1内:i'回文
-	//不超过时为d[(c<<1)-i]
-	//超过时令ir满足i+ir-1=c+cr-1
-	else ir=min(d[(c<<1)-i],c+cr-i);
-
-	do{
-		//扩展前边界检查
-		if(i < ir)break;
-		if(n-1 < i+ir)break;
-
-		//不让i+d[i']-1 < c+d[c]-1进行扩展
-		if(i+d[(c<<1)-i]-1 < c+cr-1)break;
-
-		//左右扩展
-		if(s[i+ir] == s[i-ir])ir++;
-		else break;
-	}while(true);
-
-	d[i] = ir;//不含插入字符回文长=ir-1
-
-	//i加回文半径ir-1更远时更新c,cr
-	if (i + ir - 1 > c + cr - 1) {
-		c = i;
-		cr = ir;
-	}
-}
+//充要: 顺序记录回文长,记录最旧且右端最远回文,利用对称获取右半部分信息
+//不超过最右端时：
+//	可以外扩时，截取到最右侧并从右侧最远+1后开始比较
+//	不可外扩时，直接用左侧信息
+//超过最右端时: 外扩
 ```
 
 
@@ -669,6 +633,13 @@ for (int i=1,ir; i<= n-1 ; i++) {//d[1,n-1]
 ## <font color=#ffe211> :sparkles: 数学 </font>
 
 ```ebnf
+(* point为点，duration为包含左右point端点的闭区间段[point1,point2] *)
+
+(* (p2>=p1)p2-p1 = (-inf,p2] - (-inf,p1]  = (p1,p2] *)
+(* (p2>=p1)p2+p1 = (-inf,p1) + [p1,p1+p2] = (-inf,p1+p2] *)
+
+(* [point1,point2] = (-inf,point2] - (-inf,point1] + point1 = (point1,point2]+point1 *)
+
 (* 质数(素数):因式分解只能是1和它本身 *)
 (* 整数唯一分解定理:任何一个大于1的整数都可以唯一地分解为多个质数n次方的乘积 *)
 (* 整数分解:质数以乘法分解,进制以加法分解 *)
@@ -726,6 +697,182 @@ int exgcd(int a, int b, int &x, int &y) {
 (* 大步:枚举(g^m)^i for i=0,1,...,m-1在哈希表中查找匹配 *)
 (* 复杂度从O(p)降到O(sqrt(p)) *)
 
+```
+
+# 板子
+
+* 二分
+```cpp
+//排除二分(排除中点和不可能区间)
+//返回等于v的元素
+template<std::random_access_iterator iterT, typename valueT>
+iterT binary_exclude_search(iterT begin, iterT end,valueT&& v){
+	if (begin == end) return false;
+
+	iterT first,last;
+	first = begin;
+	last = end - 1;
+	while(first + 1 < last){
+		auto middle = first + (last-first+1)/2;
+
+		if (v > *middle){
+			first = middle + (middle<last ? 1 : 0);//排除middle向右
+		}
+		else if (v < *middle){
+			last =  middle - (middle>first? 1 : 0);//排除middle向左
+		}else{
+			return *middle;
+		}
+	}
+
+	//结束状态奇数或偶数长时处理
+	if (begin != nullptr){
+		if (*first == v)return first;
+		if (*last  == v)return last;
+
+	}else{
+		return nullptr;
+	}
+}
+
+
+//包含二分(包含中点和可能区间)
+//返回小于等于v的最大元素
+template<std::random_access_iterator iterT, typename valueT>
+iterT binary_include_search(iterT begin, iterT end,valueT&& v){
+	if (begin == end) return false;
+
+	iterT first,last;
+	first = begin;
+	last = end - 1;
+	while(first + 1 < last){
+		auto middle = first + (last-first+1)/2;
+
+		if (v > *middle){
+			first = middle + (middle<last ? 1 : 0);//排除middle向右
+		}else{
+			last =  middle; //小于时仍然有机会
+		}
+	}
+
+	//结束状态奇数或偶数长时处理
+	if (begin != nullptr){
+		if (*first == v)return first;
+		if (*last  == v)return last;
+
+	}else{
+		return nullptr;
+	}
+}
+```
+
+* MANACHER
+
+```cpp
+string longestPalindrome(string s) {
+	if (s.empty())return {};
+
+	//马 拉 车
+	//回文:从前和后遍历结果一样, 中心对称
+	//求回文需要对n个字符间插入字符(n+1个),使总数变为奇数2n+1
+
+	//充要: 顺序记录回文长,记录最旧且右端最远回文,利用对称获取右半部分信息
+	//不超过最右端时：
+	//	可以外扩时，截取到最右侧并从右侧最远+1后开始比较
+	//	不可外扩时，直接用左侧信息
+	//超过最右端时: 外扩
+
+	string ext_s("#");
+	for(auto &&i : s){
+		ext_s+=i;
+		ext_s+='#';
+	}
+
+	//cout << ext_s << endl;
+
+	//记录最大结果索引
+	int maxp_i = 2;
+	string result;
+
+	int* plen = new int[ext_s.size()];
+	for(int i=1;i<=ext_s.size();i++)plen[i(i)]=1;
+	//长度为3: 1 2 1
+	//长度为5: 1 2 ...
+	//...
+	plen[i(2)] = 2;
+
+	int max_right_i = 2;//最右端点的回文中心索引
+	int max_right_right = 3;//最右端点
+
+	for(int index = 3,mirror,l,r;
+	index <= ext_s.size() && max_right_i < ext_s.size();
+	index++){
+
+		max_right_right = max_right_i - 1 + plen[i(max_right_i)];
+
+		if (index <= max_right_right){
+			//mirror + index = 2 * max_right_i
+			mirror = 2 * max_right_i - index;
+
+			if (index - 1 + plen[i(mirror)] < max_right_right){
+				plen[i(index)] = plen[i(mirror)];
+
+				//cout <<"index:" << index << ",mirror " << mirror << endl;
+
+			}else{
+				//index - 1 + plen[i(mirror)] >= max_right_right
+				//截取[index,max_right_right]长
+				plen[i(index)] = max_right_right - index + 1;
+
+				//l+r = 2*index,从r = max_right_right+1开始比
+				r = max_right_right + 1;
+				l = 2*index - r;
+
+				while(l >=1 && r <= ext_s.size() && ext_s[i(l)] == ext_s[i(r)]){
+					plen[i(index)]++;
+					l--;r++;
+				}
+
+				if(index - 1 + plen[i(index)] > max_right_right )max_right_i = index;
+			}
+
+		}else{
+			r = index + 1;
+			l = index - 1;
+			plen[i(index)] = 1;
+
+			//cout <<"p1 index:" << index << ",max_right_right:" << max_right_right << endl;
+
+			while(l >=1 && r <= ext_s.size() && ext_s[i(l)] == ext_s[i(r)]){
+				plen[i(index)]++;
+				l--;r++;
+			}
+
+			if(index - 1 + plen[i(index)] > max_right_right )max_right_i = index;
+		}
+
+		if (plen[i(maxp_i)] < plen[i(index)]){maxp_i = index;}
+
+	}
+
+
+	int r = maxp_i + plen[i(maxp_i)] - 1;
+	int l = maxp_i - plen[i(maxp_i)] + 1;
+
+	while(l <= r){
+		if(ext_s[i(l)]!='#'){
+			result += ext_s[i(l)];
+		}
+
+		l++;
+	}
+
+	//for(int i=1;i<=ext_s.size();i++)cout << plen[i(i)] <<  ' ';cout << endl;
+
+	delete[] plen;
+
+	return result;
+}
 ```
 
 

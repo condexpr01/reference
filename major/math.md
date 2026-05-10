@@ -1,11 +1,12 @@
 
 # 运算
-* <font color=#39c5bb>集项,先定符号,运算高到低,树状cache</font>    
-* <font color=#39c5bb>子集可推集合,集合不可推真子集</font>    
-* <font color=#39c5bb>函数套函数,0级,关系,同增异减</font>     
-* <font color=#39c5bb>最小值齐次同除,最大值消元开导</font>    
-* <font color=#39c5bb>同时取平方结果应回归</font>    
+* <font color=#39c5bb>集项,先定符号,运算高到低</font>    
+* <font color=#39c5bb>分数处理：分解,同除(齐次),同乘(共轭),换元,取倒,同时加减</font>    
+* <font color=#39c5bb>子集可推集合, 集合不可推真子集</font>    
+* <font color=#39c5bb>向量是坐标差, 作为载体只能负载方向信息</font>    
+* <font color=#39c5bb>同时取平方结果应当回归</font>    
 * <font color=#39c5bb>级函数</font>：<font color=#ffa500>$ level(n) \rightarrow function \rightarrow level(n+1) $</font>       
+* <font color=#39c5bb>函数套函数,0级,关系,同增异减</font>     
 * <font color=#39c5bb>方差 = 平方的平均 - 平均的平方,方差越大越离散</font>,<font color=#ffa500>$ s^2 = \frac{1}{n} \sum ^{n} _{i=1} {x _i ^2} - \overline{x}^2 $</font>    
 * <font color=#39c5bb>和比性质</font>,<font color=#ffa500>$ \frac {a}{b} = \frac{c}{d} = \frac{a+c}{b+d} $</font>    
 * <font color=#ffa500>$ \frac{(\frac{a}{b})}{(\frac{c}{d})} = \frac{ad}{bc} $</font>    
@@ -41,7 +42,7 @@
     a^3 - b^3 = (a - b)(a^2 + b^2 + ab) \end{cases} $</font>
 
 ---
-* 二次根的分布：<font color=#ffa500>开口、对称轴、$\Delta$、特殊点</font>
+* 二次根的分布的确定：<font color=#ffa500>开口、对称轴、$\Delta$、特殊点</font>
 
 * 求根公式:
 > <font color=#ffa500>$ \Delta = b^2 - 4ac, x= \frac {-b \pm \sqrt{\Delta} }{2a} $</font>    
@@ -68,6 +69,77 @@
 > <font color=#39c5bb>$ i = \sqrt {-1} $</font>    
 
 ---
+
+# 向量:
+* 运算
+> <font color=#39c5bb>向量坐标</font>:<font color=#ffa500>后-前</font>    
+> <font color=#39c5bb>向量加减</font>:<font color=#ffa500>$ 
+\begin{cases}
+加:终点对起点,和向量为起点指向终点 \\
+减:终点对终点,差向量为起点指向起点 \\
+\end{cases} $</font>    
+> <font color=#39c5bb>A,B,C共线</font>,<font color=#ffa500>$ a \overrightarrow {OA} + b \overrightarrow {OB} = \overrightarrow {OC} $,O不在AB上有,$ a + b = 1 $</font>    
+
+* <font color=#39c5bb>点乘(数量积)</font>：<font color=#ffa500>$ \overrightarrow {a} \cdot \overrightarrow {b} = |\overrightarrow {a}| |\overrightarrow {b}| \cos { \theta }  $</font>    
+
+* 叉乘
+    * <font color=#39c5bb>方向</font>:<font color=#ffa500>$ \overrightarrow{+x} \times \overrightarrow{+y},朝右手系+z $</font>    
+    * <font color=#39c5bb>大小</font>:<font color=#ffa500>$ 四边形面积S=| \overrightarrow{n} | $</font>    
+    * <font color=#39c5bb>两个向量写两遍,去头去尾留中间,交叉相乘再相减</font>    
+> <font color=#ffa500>e.g.由(a , b , c),(d , e ,f)描述的平面法向量$ \overrightarrow{n} $</font>    
+> <font color=#ffa500>~~a~~ b c a b ~~c~~</font>
+> <font color=#ffa500>~~d~~ e f d e ~~f~~</font>    
+> <font color=#ffa500>$ \overrightarrow{n} (bf - ce , cd - af , ae - bd) $</font>    
+
+* 向量三角
+> <font color=#39c5bb>向量构成的三角中,$\alpha$角为任意内角,所对向量为对向量，相邻的邻向量,斜边为斜向量</font>    
+> <font color=#39c5bb>对斜</font>:<font color=#ffa500>$ \sin \alpha = \cos \theta = cos<对向量,斜向量> $</font>    
+> <font color=#39c5bb>邻斜</font>:<font color=#ffa500>$ \cos \alpha = \cos \theta = cos<邻向量,斜向量> $</font>    
+
+> <font color=#39c5bb>对$\cos\theta$加上绝对值即可求线线角,线面角</font>
+
+
+
+# 变换
+> <font color=#39c5bb>opengl右手系: 拇指x,食指y,中指z </font>    
+
+### 旋转
+* 极坐标
+> <font color=#39c5bb>平面内的任何一个点可以表示为</font>：<font color=#ffa500>$ (l*cos(\theta),l*sin(\theta)) $</font>    
+> <font color=#39c5bb>对极坐标旋转可以表示为</font>：<font color=#ffa500>$ (l*cos(\theta+\alpha),l*sin(\theta+\alpha)) $</font>    
+
+* 矩阵
+> <font color=#39c5bb>若表示$\overrightarrow v$绕$\overrightarrow n$轴逆时针转$\theta$角</font>：<font color=#ffa500><br>将$\overrightarrow v$分解到$\overrightarrow n$方向为$\overrightarrow v _n$,<br>再用$\overrightarrow v - \overrightarrow v _n = \overrightarrow v _p$ 得到$\overrightarrow v _p$(垂直于$\overrightarrow n$),<br> 此时$\overrightarrow v$绕$\overrightarrow n$转,变为$\overrightarrow v _p$绕$\overrightarrow n$转,<br>以$\overrightarrow v _p$和$\overrightarrow n \times \overrightarrow v _p $和$\overrightarrow v _p$建系, <br>现在把$\overrightarrow v _p$表示为极坐标($|\overrightarrow v _p| \cos 0$,$|\overrightarrow v _p| \sin 0$),<br>让这个极坐标的角度加上$\theta$,<br>则$\overrightarrow v _{pr}$ = ($|\overrightarrow v _p| \cos \theta$,$|\overrightarrow v _p| \sin \theta$),<br>$\overrightarrow v _r = \overrightarrow v _n + \overrightarrow v _{pr}$旋转完成</font>    
+
+> <font color=#39c5bb>罗德里格斯旋转公式(向量形式)</font>：<font color=#ffa500>$ \overrightarrow v _r = \overrightarrow v + (1 - \cos \theta) · \overrightarrow n \times (\overrightarrow n \times \overrightarrow v) + \overrightarrow n \times \overrightarrow v · \sin \theta  $</font>    
+> <font color=#39c5bb>罗德里格斯旋转公式(矩阵形式)</font>：<font color=#ffa500><br> $ \overrightarrow v _r = M · \overrightarrow v, $ <br>$M = (1-\cos\theta)·[\overrightarrow n] _{cross} ^2 + \sin\theta · [\overrightarrow n] _{cross} + I $ <br> (其中$I$为单位矩阵,$[\overrightarrow n] _{cross}$为$\overrightarrow n$作为叉乘的左操作对象的等价矩阵)</font>    
+
+* 复数
+> <font color=#39c5bb>单个平面只需要{1,i}为基的坐标系就可以描述</font>    
+> <font color=#39c5bb>复平面内任何一个点可以表示为</font>：<font color=#ffa500>$ z _p = l·(cos(\theta) + sin(\theta))*i) $</font>    
+> <font color=#39c5bb>对复平面点旋转</font>：<font color=#ffa500>$ z_p $旋转到$z _r$ , <br>$ z _r = l·[cos(\theta+\alpha)+sin(\theta+\alpha)i]$<br>可求得$z _{m} = \cos \alpha + \sin \alpha · i$<br>即$z_p \times z _m = z _r$</font>    
+
+* 叉乘
+> <font color=#39c5bb>叉乘会旋转垂直分量90度</font>：<font color=#ffa500> <br> $ v_{\perp}' = \cos \theta \cdot v _{\perp} + \sin \theta \cdot (\overrightarrow n \times v _\perp) = (\cos \theta \cdot I + \sin \theta \cdot [\overrightarrow n] _{cross}) v _\perp $ <br> 绕n轴旋转为: $ v' = v _\perp ' + v _{||} $</font>    
+
+* 四元数
+> <font color=#39c5bb>四元数的基(叉乘不满足交换律)</font>：<font color=#ffa500>$\{w,i,j,k\},i^2=j^2=k^2=ijk=-1$</font>    
+> <font color=#39c5bb>四元数为复数的拓展</font>：<font color=#ffa500>$ q = \cos \frac{\theta}{2} + \sin \frac{\theta}{2} \cdot \overrightarrow n, (|n| =1,n = n_x \cdot i + n_y \cdot j + n_z \cdot k) $</font>    
+> <font color=#39c5bb>四元数的共轭</font>：<font color=#ffa500>$ q' = \cos \frac{\theta}{2} - \sin \frac{\theta}{2} \cdot \overrightarrow n, (|n| =1,n = n_x \cdot i + n_y \cdot j + n_z \cdot k) $</font>    
+> <font color=#39c5bb>旋转表示为夹乘</font>：<font color=#ffa500>$ v' = qvq' $</font>    
+> <font color=#39c5bb>夹乘</font>：<font color=#ffa500>会在复平面和n垂直的3d平面同时转,需要把转到复平面w的分量转回来,3d平面不满足交换律,复平面满足交换律,在3d平面的旋转会叠加,而乘共轭使复平面的旋转抵消,所以需要$\frac{\theta}{2}$</font>    
+
+> <font color=#39c5bb>插值slerp</font>：<font color=#ffa500>四元数的插值轨迹是更自然的</font>    
+
+* 欧拉锁
+> <font color=#39c5bb>欧拉锁发生在使用世界坐标系时，和数学工具无关，使用angle axis实时更新局部坐标系可以避免</font>    
+
+### 平移
+> <font color=#39c5bb>对坐标的加减运算</font>    
+
+### 缩放
+> <font color=#39c5bb>对坐标的乘除运算</font>    
+
 
 # 不等式:
 * <font color=#39c5bb>调几算平</font>:<font color=#ffa500>$ (\frac { a^{-1} + b^{-1} } {2})^{-1} \leq \sqrt{ab} \leq \frac{a + b}{2} \leq \sqrt{\frac {a^2 + b^2} {2} } $</font>    
@@ -172,7 +244,7 @@
 <font color=#ffa500>$\displaystyle \lim _{x \to n} [f(x)g(x)] = \lim _{x \to {n}} f(x) \lim _{x \to {n}} g(x)$</font>    
 <font color=#ffa500>$\displaystyle \lim _{x \to n} [\frac{f(x)}{g(x)}] = \frac{\displaystyle \lim _{x \to {n}} f(x) }{\displaystyle \lim _{x \to {n}} g(x)}$</font>    
 
-# 微分积分
+# 微分积分：
 > <font color=#39c5bb>定积分</font>: <font color=#ffa500>$ \int ^{b} _{a} f(x) dx = F(b) - F(a) $</font>    
 > <font color=#39c5bb>不定积分</font>: <font color=#ffa500>$ \int f'(x)dx = f(x) $</font>    
 
@@ -277,28 +349,6 @@ $$</font>
 > <font color=#ffa500>$Sa - Sb =2C \frac {a+b}{2} S \frac {a-b}{2}$</font>    
 > <font color=#ffa500>$Ca + Cb =2C \frac {a+b}{2} C \frac {a-b}{2}$</font>    
 > <font color=#ffa500>$Ca - Cb =-2S \frac {a+b}{2} S \frac {a-b}{2}$</font>    
-
-
-# 向量:
-* 运算
-> <font color=#39c5bb>向量坐标</font>:<font color=#ffa500>后-前</font>    
-> <font color=#39c5bb>向量加减</font>:<font color=#ffa500>$ 
-\begin{cases}
-加:终点对起点,和向量为起点指向终点 \\
-减:终点对终点,差向量为起点指向起点 \\
-\end{cases} $</font>    
-> <font color=#39c5bb>A,B,C共线</font>,<font color=#ffa500>$ a \overrightarrow {OA} + b \overrightarrow {OB} = \overrightarrow {OC} $,O不在AB上有,$ a + b = 1 $</font>    
-
-* <font color=#39c5bb>点乘(数量积)</font>：<font color=#ffa500>$ \overrightarrow {a} \cdot \overrightarrow {b} = |\overrightarrow {a}| |\overrightarrow {b}| \cos { \theta }  $</font>    
-
-* 叉乘
-    * <font color=#39c5bb>方向</font>:<font color=#ffa500>$ \overrightarrow {a}(食指) \times \overrightarrow {b}(中指) , 方向在右手右手拇指(注：物理B总在中指) $</font>    
-    * <font color=#39c5bb>大小</font>:<font color=#ffa500>$ 四边形面积S=| \overrightarrow{n} | $</font>    
-    * <font color=#39c5bb>两个向量写两遍,去头去尾留中间,交叉相乘再相减</font>    
-> <font color=#ffa500>e.g.由(a , b , c),(d , e ,f)描述的平面法向量$ \overrightarrow{n} $</font>    
-> <font color=#ffa500>~~a~~ b c a b ~~c~~</font>
-> <font color=#ffa500>~~d~~ e f d e ~~f~~</font>    
-> <font color=#ffa500>$ \overrightarrow{n} (bf - ce , cd - af , ae - bd) $</font>    
 
 
 # 数列:

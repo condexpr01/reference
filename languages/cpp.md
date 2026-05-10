@@ -4085,10 +4085,10 @@ return 返回具有与返回类类型类型相同的名字
 ## <font color=#ffe211> :sparkles: Rule of 3/5/0</font>
 
 ```cpp
-//3:析构、(&)[复制构造、复制赋值operater=]，三者同时定义
+//3:(&)[复制构造、复制赋值operater=]，析构，三者同时定义
 
-//5:析构、(&)[复制构造、复制赋值operater=]、
-////     (&&)[移动构造、移动赋值operater=],(cpp11+)五者同时定义
+//5:(&)[复制构造、复制赋值operater=]、
+// (&&)[移动构造、移动赋值operater=]，析构，五者同时定义(cpp11+)
 
 //0:如果类不直接管理资源(内存、文件、互斥锁等)，
 ////那就定义0个特殊成员函数(析构/拷贝/移动/赋值)
@@ -4103,6 +4103,24 @@ return 返回具有与返回类类型类型相同的名字
 
 //不强迫使用不需要的东西
 //不付出未使用的东西的代价
+```
+
+## <font color=#ffe211> :sparkles: stable principle</font>
+```cpp
+//使用stl时必须考虑是否stable
+
+//std::sort unstable
+//std::stable_sort stable
+```
+
+## <font color=#ffe211> :sparkles: header guard</font>
+```cpp
+#ifndef HEADER_GUARD
+#define HEADER_GUARD
+
+<header_content>
+
+#endif
 ```
 
 # <font color=#ffe211>:star: 库 </font>

@@ -4123,6 +4123,87 @@ return 返回具有与返回类类型类型相同的名字
 #endif
 ```
 
+## <font color=#ffe211> :sparkles: thread</font>
+```cpp
+//###std::mutex
+//原子语义的变量，在锁定时不能被获取，在没有锁定时可以获取
+//通过std::mutex::lock阻塞直到获取
+//通过std::mutex::try_lock不阻塞获取
+//通过std::mutex::unlock释放锁
+
+//###template<typename mutex> class lock_guard
+//RAII形式的mutex
+//构造时会用mutex::lock阻塞直到获取锁
+
+//###template<typename mutex> class unique_lock
+//RAII形式的mutex
+//不控制行为构造时会用mutex::lock阻塞直到获取锁
+//行为控制用defer_lock_t, try_to_lock_t, adopt_lock_t
+
+//defer_lock_t: 不获取锁, 认为没有锁
+//adopt_lock_t: 不获取锁, 认为有领养的锁
+//try_to_lock_t: 用try_lock获取锁
+
+//###std::condition_variable
+//条件变量
+//cv.wait在谓词返回为false释放锁(false lock), 唤醒后获取锁
+//cv.wait在谓词返回为true持有锁 (true  lock), 不wait
+
+//cv.notify_one 唤醒cv.wait的一个线程
+//cv.notify_all 唤醒cv.wait的所有线程
+
+//唤醒后应该主动去让出剩余时间片, 使用std::this_thread::yield()
+//或者阻塞当前线程std::this_thread::sleep_for(duration)
+
+//供需简易实现
+template <typename callable_type>
+requires requires(callable_type f){{f()};}
+class worker{
+public:
+	callable_type jobs;
+
+	class worker_status{
+	public:
+		std::mutex mtx;
+		std::condition_variable cv;
+
+		bool has_jobs = false;
+		bool done = false;
+
+		auto get_status() noexcept{ return [this](){return has_jobs || done;};}
+		void reset_status() noexcept{ has_jobs = false; }
+	} status{};
+
+	void worker_func(){
+		std::unique_lock<std::mutex> lock{status.mtx};
+
+		while(true){
+			status.cv.wait(lock,status.get_status());
+
+			if (status.done)break;//quit
+
+			jobs();
+
+			status.reset_status();//for next waiting
+		}
+	}
+
+	void wake_up_worker(){
+		std::lock_guard<std::mutex> lock{status.mtx};
+
+		status.has_jobs = true;
+		status.cv.notify_all();
+	}
+
+	void release_worker(){
+		std::lock_guard<std::mutex> lock{status.mtx};
+
+		status.done = true;
+		status.cv.notify_all();
+	}
+};
+```
+
 # <font color=#ffe211>:star: 库 </font>
 > <font color=#39c5bb>下面库中包含的实现,可能并非实际的</font>    
 

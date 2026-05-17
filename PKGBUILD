@@ -1,7 +1,7 @@
 # Maintainer: condexpr01(Vito Devlin) <condexpr01@outlook.com>
 PACKAGER='condexpr01(Vito Devlin) <condexpr01@outlook.com>'
-pkgname=ref
-pkgver=2026.02.03.1
+pkgname=reference
+pkgver=2026.05.18.1
 pkgrel=1
 pkgdesc='Reference'
 arch=('any')

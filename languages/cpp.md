@@ -4155,17 +4155,50 @@ return 返回具有与返回类类型类型相同的名字
 //唤醒后应该主动去让出剩余时间片, 使用std::this_thread::yield()
 //或者阻塞当前线程std::this_thread::sleep_for(duration)
 
+//###std::thread
+//线程，可以进行多种控制，无RAII
+//thread::join 阻塞直到线程结束
+//thread::joinable 检查是否有关联的活动线程
+//thread::detach 分离线程为独立后台线程
+//thread::get_id 线程tid
+//thread::native_handle 返回底层句柄
+//thread::swap 交换底层关联的线程
+//thread::hardware_concurrency 返回硬件支持的并发线程数
+
+//###std::stop_token, std::stop_source
+//std::stop_source可以通过std::stop_token观察
+
+//stop_source::request_stop  请求停止
+//stop_source::stop_requested 查询是否已调用request_stop
+//stop_source::stop_possible 检查stop_source是否关联有效的停止状态
+//stop_source::get_token 获取观察器std::stop_token
+//stop_source::swap 交换内部停止状态
+
+//stop_token::stop_requested 观察停止状态是否有请求停止
+//stop_token::stop_possible  观察是否关联活动的stop_source
+//stop_token::swap
+
+//###std::jthread
+//RAII版的std::thread，可以接受callable对象的第一个参数为std::stop_token
+//会传入内部std::stop_source的get_token作为第一个参数
+
+//jthread::get_stop_source 内部stop_source对象
+//jthread::get_stop_token  内部stop_source.get_token
+//jthread::request_stop    请求停止
+
 //供需简易实现
-template <typename callable_type>
-requires requires(callable_type f){{f()};}
+//worker必然在jthread之前
+//按cpp的析构顺序会导致先析构jthread再析构worker
+//worker如果在wait, jthread析构会卡死
+//所以放弃worker的析构，使用jthread的stop_token
 class worker{
 public:
-	callable_type jobs;
+	void (*jobs)();//pimpl
 
 	class worker_status{
 	public:
 		std::mutex mtx;
-		std::condition_variable cv;
+		std::condition_variable_any cv;
 
 		bool has_jobs = false;
 		bool done = false;
@@ -4174,13 +4207,15 @@ public:
 		void reset_status() noexcept{ has_jobs = false; }
 	} status{};
 
-	void worker_func(){
+	void worker_func(std::stop_token stoken){
 		std::unique_lock<std::mutex> lock{status.mtx};
 
 		while(true){
-			status.cv.wait(lock,status.get_status());
+			status.cv.wait(lock,stoken,status.get_status());
 
-			if (status.done)break;//quit
+			//quit
+			if(stoken.stop_requested())break;
+			if (status.done)break;
 
 			jobs();
 
@@ -4195,12 +4230,16 @@ public:
 		status.cv.notify_all();
 	}
 
+	//need to wakeup before thread join
+	//manually call or use stop_token
 	void release_worker(){
 		std::lock_guard<std::mutex> lock{status.mtx};
 
 		status.done = true;
 		status.cv.notify_all();
 	}
+
+	~worker()=default;
 };
 ```
 

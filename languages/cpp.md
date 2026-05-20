@@ -3975,6 +3975,9 @@ void eg(){
 
 ## <font color=#ffe211> :sparkles: 指针 </font>
 ```cpp
+//指针和数字本质上无异, 完全等价用uinptr_t+类型转换
+
+//cpp追求RAII
 //栈上的变量用普通指针
 //堆上的变量用智能指针
 

@@ -4005,6 +4005,63 @@ void eg(){
 //非标扩展__restrict__是保证指针唯一指向的保证，和unique_ptr语义不同
 ```
 
+```cpp
+//linux进程访问指针链
+
+//解引用rvec->lvec, 同时更新rvec到下一个地址
+template <typename T = uintptr_t>
+void process_vm_readv_pointer(
+	pid_t pid,
+	struct iovec &lvec,
+	struct iovec &rvec,
+	unsigned long next_offset
+){
+
+	if(process_vm_readv(pid,&lvec,1,&rvec,1,0) == lvec.iov_len){
+
+		//lvec.iov_base内容更新，此时可以解引用lvec.iov_base
+		rvec.iov_base = reinterpret_cast<void*>(
+			*static_cast<T*>(lvec.iov_base) + next_offset);
+
+	}else{
+		throw std::runtime_error{std::strerror(errno)};
+	}
+}
+
+//1级以上指针链
+//f(a,b)  = *a + b
+//content = * f(    base+pointer_offset,0)
+//content = * f(f(  base+pointer_offset,0),addr1)
+//content = * f(f(f(base+pointer_offset,0),addr1),addr2)
+//...
+template <typename content_type, std::convertible_to<std::uintptr_t> ...T>
+content_type dereference_pointer_chain(pid_t pid, uintptr_t base, uintptr_t pointer_offset, T ...addr){
+
+	struct iovec rvec{};
+	uintptr_t lvec_content{};
+	struct iovec lvec{&lvec_content,sizeof(lvec_content)};
+
+	rvec.iov_base = reinterpret_cast<void*>(base + pointer_offset);
+	rvec.iov_len = sizeof(lvec_content);
+
+	//0->1级
+	process_vm_readv_pointer(pid,lvec,rvec,0);
+
+	//1->2级以上
+	(process_vm_readv_pointer(pid,lvec,rvec,addr),...);
+
+	//return
+	content_type content{};
+	lvec.iov_base = &content;
+	lvec.iov_len = rvec.iov_len = sizeof(content);
+
+	if(process_vm_readv(pid,&lvec,1,&rvec,1,0) != lvec.iov_len){
+		throw std::runtime_error{std::strerror(errno)};
+	}
+	return content;
+}
+```
+
 ## <font color=#ffe211> :sparkles: namespace+尾递归 </font>
 
 ```cpp
@@ -4226,11 +4283,20 @@ public:
 		}
 	}
 
-	void wake_up_worker(){
+	void force_to_wake_up_worker(){
 		std::lock_guard<std::mutex> lock{status.mtx};
 
 		status.has_jobs = true;
 		status.cv.notify_all();
+	}
+
+	void try_to_wake_up_worker(){
+		std::unique_lock<std::mutex> lock(status.mtx,std::try_to_lock_t{});
+
+		if(lock.owns_lock()){
+			status.has_jobs = true;
+			status.cv.notify_one();
+		}
 	}
 
 	//need to wakeup before thread join

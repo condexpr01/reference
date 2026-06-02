@@ -180,6 +180,8 @@
 
 # 权限
 
+* ls -l查看
+
 ```shell
 普通文件(-)
 目录文件(d)
@@ -201,6 +203,14 @@ a:all ugo
 <owner> ::= 000 | ... | 777
 <group_owner> ::= 000 | ... | 777
 <other> ::= 000 | ... | 777
+```
+
+* files
+```shell
+/etc/passwd: 用户名:密码:x:GID:GECOS:家目录:登录Shell（密码通常为 x，表示存储在/etc/shadow）
+/etc/shadow: 用户名:加密密码:最后修改日:最小天数:最大天数:警告天数:不活动天数:过期日:保留字段
+/etc/group: 组名:密码:GID:成员列表
+/etc/gshadow: 组名:密码:管理员:成员列表
 ```
 
 # 掩码

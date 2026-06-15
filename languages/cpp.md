@@ -4062,17 +4062,30 @@ content_type dereference_pointer_chain(pid_t pid, uintptr_t base, uintptr_t poin
 }
 ```
 
-## <font color=#ffe211> :sparkles: namespace+尾递归 </font>
+## <font color=#ffe211> :sparkles: 万能引用 + if constexpr </font>
 
 ```cpp
-namespace id{
+template<typename T>
+T func(T&& arg){
+	if constexpr(std::is_lvalue_reference_v<T>){
+		//lvalue
+	}else{
+		//rvalue
+	}
+}
+```
+
+## <font color=#ffe211> :sparkles: 作用域+尾递归 </font>
+
+```cpp
+{
 	//part:vars
 	
 	//part:recursive function
 }
 
 //将recursive function中的
-//局部变量分离到外部命名空间
+//局部变量分离到外部临时空间
 //加上尾递归jmp而不是call
 //从而不压栈,不用局部变量栈
 
@@ -4088,6 +4101,13 @@ leave
 ret
 */
 
+```
+
+## <font color=#ffe211> :sparkles: 类 </font>
+
+```cpp
+多个函数或代码片，与相同的变量相关
+考虑使用类来获取更高的抽象, 简化代码
 ```
 
 ## <font color=#ffe211> :sparkles: 复制消除 </font>

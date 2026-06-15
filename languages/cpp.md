@@ -4075,19 +4075,19 @@ T func(T&& arg){
 }
 ```
 
-## <font color=#ffe211> :sparkles: 作用域+尾递归 </font>
+## <font color=#ffe211> :sparkles: 类+尾递归 </font>
 
 ```cpp
-{
+class{
 	//part:vars
 	
 	//part:recursive function
-}
+};
 
 //将recursive function中的
-//局部变量分离到外部临时空间
-//加上尾递归jmp而不是call
-//从而不压栈,不用局部变量栈
+//局部变量分离到类内变量
+//使尾递归jmp而不是call
+//从而不压栈, 不用局部变量栈
 
 /*
 push ebp
@@ -4100,7 +4100,6 @@ sub esp,locals
 leave
 ret
 */
-
 ```
 
 ## <font color=#ffe211> :sparkles: 类 </font>

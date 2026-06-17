@@ -3657,7 +3657,8 @@ this
 
 ```cpp
 //模块声明有export为模块接口单元，其它模块为实现单元
-//
+//一个模块必须且只能有一个export module
+//实现单元没有且不能有export
 [export] module [module_name] [module_partition] [attribute_specifier_seq] ;
 
 //导出声明定义，使可以导出到其他翻译单元
@@ -3676,6 +3677,16 @@ import header_name      [attribute_specifier_seq] ;
 
 //导入模块并使可以导出到其他翻译单元
 export module_import_declaration
+
+//编译模块使用 --precompile
+//pcm(precompile module)
+//e.g. clang++ -std=c++26 --precompile mod.cppm -o mod.pcm
+
+//使用模块使用 -fmodule-file=[<name>=]<file>
+//e.g. clang++ -std=c++26 -fmodule-file=mod=mod.pcm mod.cpp -o mod.o
+
+//cmake里编译使用module
+//e.g. target_sources(<target> PRIVATE FILE_SET CXX_MODULES FILES mod.cppm)
 ```
 
 > <font color=#39c5bb> cppm文件结构顺序: </font>    
@@ -3692,7 +3703,7 @@ export module_import_declaration
 [<declaration>]
 
 //private是个特别的分区,为私有模块片段
-//不会把内容暴露给导入方,同名模块中可以互相导入
+//不会把内容暴露给导入方
 module:private;
 [<declaration>]
 ```

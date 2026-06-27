@@ -23,6 +23,7 @@ prepare() {
 	cp -r "$startdir"/languages "$srcdir/"
 	cp -r "$startdir"/major "$srcdir/"
 	cp -r "$startdir"/tools "$srcdir/"
+	cp -r "$startdir"/libs "$srcdir/"
 }
 
 package() {

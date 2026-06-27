@@ -6,8 +6,9 @@ makepkg -si
 
 * Usage
 ```shell
-Usage: /usr/bin/ref <command> <filename>
+Usage: /usr/bin/ref <shell-command> <filename>
 e.g.: /usr/bin/ref echo cpp
+e.g.: /usr/bin/ref ls cpp
 e.g.: ls -l /usr/share/ref/languages/cpp.md
 e.g.: /usr/bin/ref nvim cpp
 e.g.: /usr/bin/ref glow cpp
@@ -66,5 +67,4 @@ e.g.: /usr/bin/ref microsoft-edge-stable cpp
     ├── +gdb.md
     ├── +git.md
     └── vim.md
-
 ```

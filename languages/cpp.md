@@ -2354,6 +2354,9 @@ alignas(type_id)
 //等价于对形参包的各个成员应用
 //alignas(成员最大对齐要求)
 alignas(pack...)
+
+//对齐分配总是向上匹配, 对齐的大小必须是2的幂
+//SIMD(SSE需要16, AVX需要32, AVX-512需要64)
 ```
 
 > <font color=#39c5bb>alignas用于类的声明定义,非数据成员,变量</font>    
@@ -3985,6 +3988,7 @@ void eg(){
 ```
 
 ## <font color=#ffe211> :sparkles: 指针 </font>
+
 ```cpp
 //指针和数字本质上无异, 完全等价用uinptr_t+类型转换
 
@@ -4071,6 +4075,45 @@ content_type dereference_pointer_chain(pid_t pid, uintptr_t base, uintptr_t poin
 	}
 	return content;
 }
+```
+
+## <font color=#ffe211> :sparkles: 池 </font>
+
+```cpp
+	//cpp26 allocator
+	template<typename T>
+	struct allocator{
+		using value_type = T;
+		using size_type = std::size_t;
+		using difference_type = std::ptrdiff_t;
+		using propagate_on_container_move_assignment = std::true_type;
+
+		//ctor, dtor, ctor_rebind
+		//allocate, deallocate
+		//operator==, operator!=
+
+		//address
+		//construct, destroy
+	}
+
+	//std::allocator_traits可以作为模版补全allocator
+
+	//std::pmr::memory_resource为抽象类, 分配器的统一接口
+	
+	//多线程安全同步
+	std::pmr::synchronized_pool_resource sync_pool;
+
+	//单线程不同步
+	std::pmr::unsynchronized_pool_resource unsync_pool;
+
+	//单调池(分配指针只往前走)
+	std::pmr::monotonic_buffer_resource mono_pool;
+
+	//使用 e.g.
+	std::pmr::vector<int> v(&pool);
+	//等价写法, 多态分配器控制分配器类型,allocator_type=polymorphic_allocator<int>
+	//再通过&memory_resource的&pool构造一个多态分配器
+	std::vector<int, std::pmr::polymorphic_allocator<int>> v(&pool);
 ```
 
 ## <font color=#ffe211> :sparkles: 万能引用 + if constexpr </font>

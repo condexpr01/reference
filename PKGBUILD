@@ -45,6 +45,7 @@ package() {
 	cp -r "$srcdir"/languages "$pkgdir${prefix}/share/ref"
 	cp -r "$srcdir"/major "$pkgdir${prefix}/share/ref"
 	cp -r "$srcdir"/tools "$pkgdir${prefix}/share/ref"
+	cp -r "$srcdir"/libs "$pkgdir${prefix}/share/ref"
 
 	find "$pkgdir${prefix}/share/ref" -type f -exec chmod 666 {} \;
 }

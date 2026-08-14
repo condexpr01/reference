@@ -294,6 +294,9 @@ $$</font>
 > <font color=#ffa500>$ \tan{a} = \frac{ \sin{a}}{ \cos{a}} $</font>    
 > <font color=#ffa500>$ S = \frac {1}{2}ab \sin C $</font>    
 > <font color=#ffa500>$ Asin(\omega x + \phi),\begin{cases}(sinx,cosx)中 \omega T = 2 \pi, \\ (tanx)中\omega T = \pi \end{cases} $</font>   
+> <font color=#ffa500>$ e^{i \pi} = \cos{x} + i \sin{x} $</font>    
+> <font color=#ffa500>$ \cosh(x) = \frac{e^x + e^{-x}}{2} $</font>    
+> <font color=#ffa500>$ \sinh(x) = \frac{e^x - e^{-x}}{2} $</font>    
 
 * 数值
 > <font color=#ffa500>$ sin(30^{。}) = \frac{1}{2} , sin (45^{。}) =\frac{ \sqrt{2}}{2} , sin(60^{。}) = \frac {\sqrt{3}}{2} $</font>    

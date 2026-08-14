@@ -108,6 +108,16 @@ class sdl_gl_ctx_manager{
 #define IMGUI_USE_WCHAR32
 ```
 
+## size
+```cpp
+//ImGui::NewFrame前设置画布大小
+ImGui::GetIO().DisplaySize;
+ImGui::GetIO().DisplayFramebufferScale;
+
+//设置视口，渲染的画布大小
+(*ImGui::GetMainViewport()).Size;
+```
+
 ## imgui ctx
 ```cpp
 //manage sdl3 gl3 impl and imgui ctx
@@ -273,6 +283,9 @@ void glBindBuffer(GLenum target,GLuint buffer);
 //GL_STREAM_DRAW, GL_STREAM_READ, GL_STREAM_COPY,
 //GL_STATIC_DRAW, GL_STATIC_READ, GL_STATIC_COPY,
 //GL_DYNAMIC_DRAW, GL_DYNAMIC_READ, GL_DYNAMIC_COPY
+//
+//comment:
+//现代推荐使用ubo(GL_UNIFORM_BUFFER), ssbo(GL_SHADER_STORAGE_BUFFER)，而不是glUniform*
 void glBufferData(GLenum target,GLsizeiptr size,const void * data,GLenum usage);
 void glNamedBufferData(GLuint buffer,GLsizeiptr size,const void *data,GLenum usage);
 //
@@ -310,6 +323,21 @@ void glDeleteFramebuffers(GLsizei n, GLuint *framebuffers);
 //绑定framebuufer到framebuffer target
 //target: GL_DRAW_FRAMEBUFFER, GL_READ_FRAMEBUFFER, GL_FRAMEBUFFER
 void glBindFramebuffer(GLenum target, GLuint framebuffer);
+
+//帧拷备
+//通过glBindFramebuffer指定源GL_READ_FRAMEBUFFER和目标GL_DRAW_FRAMEBUFFER
+//x0,y0,x1,y1: 左上角和右下角
+//mask: GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_STENCIL_BUFFER_BIT
+//filter: GL_NEAREST, GL_LINEAR
+void glBlitFramebuffer(
+		GLint srcX0,GLint srcY0,GLint srcX1,GLint srcY1,
+		GLint dstX0,GLint dstY0,GLint dstX1,GLint dstY1,
+		GLbitfield mask,GLenum filter);
+//DSA写法
+void glBlitNamedFramebuffer(GLuint readFramebuffer,GLuint drawFramebuffer,
+		GLint srcX0,GLint srcY0,GLint srcX1,GLint srcY1,
+		GLint dstX0,GLint dstY0,GLint dstX1,GLint dstY1,
+		GLbitfield mask,GLenum filter);
 
 //检查framebuffer完成状态
 //return value:

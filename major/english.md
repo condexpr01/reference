@@ -31,98 +31,134 @@
 # simple english defination in ebnf
 
 ```bnf
-<sentence> ::= <simple_sentence> 
+<sentence> ::= <simple_sentence>
              | <compound_sentence>
              | <complex_sentence>
+             | <sentence>
+
 (* ------------------------------ *)
 <simple_sentence> ::= [<adjunct> [","]] <independent_clause> [<adjunct>]
-<compound_sentence> ::= <simple_sentence> <conjunction> <simple_sentence>
-<complex_sentence> ::= <dependent_clause> "," <independent_clause> 
-                     | <independent_clause> <dependent_clause>
-(* ------------------------------ *)
 
+(* tag: conjunction, 连词 *)
+<compound_sentence> ::= <simple_sentence> <conjunction> <simple_sentence>
+
+(* tag: dependent_clause, 从句 *)
+<complex_sentence> ::= <dependent_clause> "," <simple_sentence> 
+                     | <simple_sentence> <dependent_clause>
+
+(* ------------------------------ *)
 <adjunct> ::= <adverb> | <prepositional_phrase>
 
-<independent_clause> ::= <declarative> 
-                       | <interrogative> 
-                       | <imperative> 
+<independent_clause> ::= <declarative>
+                       | <interrogative>
+                       | <imperative>
                        | <exclamative>
-<dependent_clause> ::= <adverbial_clause> 
-                    | <relative_clause> 
+
+<dependent_clause> ::= <adverbial_clause>
+                    | <relative_clause>
                     | <nominal_clause>
 
-<conjunction> ::= "and" | "but" | "or" 
-                  | "so" | "yet" | "for" 
+<conjunction> ::= "and" | "but" | "or"
+                  | "so" | "yet" | "for"
                   | "nor" | "because" | ...
 
 (* ------------------------------ *)
-
-<adverb> ::= "quickly" | "silently" | ...
+(* tag: preposition, 介词 *)
 <prepositional_phrase> ::= <preposition> <noun_phrase>
 
+(* tag: noun_composition+verb_phrase, 名词性成分+动词短语 *)
 <declarative> ::= <noun_composition> <verb_phrase> "."
+
+(* tag: <polar_question> | <wh_question>, 助动词或疑问词开头 *)
 <interrogative> ::= <polar_question> | <wh_question>
+
+(* tag: verb_phrase, 动词短语 *)
 <imperative> ::= <verb_phrase> "!"
-<exclamative> ::= <what_exclam> 
-                | <how_exclam> 
-                | <so_such_exclam> 
+
+<exclamative> ::= <what_exclam>
+                | <how_exclam>
+                | <so_such_exclam>
                 | <wh_exclam>
 
+(* tag: subordinator, 从属连词 *)
 <adverbial_clause> ::= <subordinator> <declarative>
+
+(* tag: relative_pronoun, 关系代词 *)
 <relative_clause> ::= <relative_pronoun> <noun_phrase> <verb_phrase> 
-<nominal_clause> ::= "that" <noun_composition> <verb_phrase> 
-                   | <wh_phrase> <noun_composition> <verb_phrase>
+
+(* tag: "that" | <wh_phrase> *)
+<nominal_clause> ::= ("that" | <wh_phrase>) <noun_composition> <verb_phrase>
+
+<adverb> ::= "quickly" | "silently" | ...
 
 (* ------------------------------ *)
-
-<preposition> ::= "in" | "on" | "at" | ...
+(* tag: noun，名词 *)
 <noun_phrase> ::= [<determiner>] [<adjective_phrase>] <noun> [<complement>] [<adjunct>] [<post_modifier>]
 
 <noun_composition> ::= <noun_phrase> | <nominal_clause>
 <verb_phrase> ::= <past_verb_phrase> | <present_verb_phrase> | <future_verb_phrase>
 
+(* tag: aux_verb，助动词 *)
 <polar_question> ::= <aux_verb> <noun_composition> <verb_phrase> "?"
-<wh_question> ::= <wh_phrase> <aux_verb> <noun_composition> <verb_phrase> "?"
-                | <wh_phrase> <verb_phrase> "?"
 
+(* tag: wh_phrase，wh短语 *)
+<wh_question> ::= <wh_phrase> [<aux_verb> <noun_composition>] <verb_phrase> "?"
+
+(* tag: "What" *)
 <what_exclam> ::= "What" <noun_phrase> [<noun_composition> <verb_phrase>] "!"
+
+(* tag: "How" *)
 <how_exclam> ::= "How" <adjective_phrase> [<noun_composition> <verb_phrase>] "!"
-<so_such_exclam> ::= "So" <adjective_phrase> [<noun_composition> <verb_phrase> "!"
-<wh_exclam> ::= <wh_phrase> <noun_composition> <verb_phrase> "!"
+
+(* tag: "So"|"Such" *)
+<so_such_exclam> ::= ("So"|"Such") <adjective_phrase> [<noun_composition> <verb_phrase>] "!"
+
+(* tag: wh_phrase，wh短语 *)
+<wh_exclam> ::= <wh_phrase> <noun_composition> [<noun_phrase> <verb_phrase>] "!"
 
 <subordinator> ::= <time_subordinator> 
                 | <cause_subordinator> 
                 | <condition_subordinator>
 
+
+<preposition> ::= "in" | "on" | "at" | ...
 <relative_pronoun> ::= "who" | "which" | ...
 <wh_phrase> ::= "What" | "Who" | "Where" | "When" | "Why" | "How" 
               | "How many" | "How much" | "How often" | "How long" | ...
-(* ------------------------------ *)
-<determiner> ::= "the" | "a" | "an" 
-                 | "this" | "that" | "these" | "those" 
-                 | "my" | "your" | "his" | "her" | ...
-<adjective_phrase> ::= <adjective> | <adjective_phrase> <adjective>
-<noun> ::= "cat" | "dog" | "man" | "woman" | ...
 
+(* ------------------------------ *)
 <complement> ::= <noun_phrase> | <adjective_phrase>
 
 <post_modifier> ::= <prepositional_phrase> | <relative_clause> | <non_predicate_phrase>
 
-<past_verb_phrase> ::= <past_verb> [<noun_composition>]
-                       [<non_predicate_phrase>] [<prepositional_phrase>]
-<present_verb_phrase> ::= <present_verb> [<noun_composition>]
-                          [<non_predicate_phrase>] [<prepositional_phrase>]
-<future_verb_phrase> ::= <future_verb> <present_verb_phrase>
+(* tag: past_verb，过去式 *)
+<past_verb_phrase>    ::= <past_verb>    [<noun_composition>] [<non_predicate_phrase>] [<prepositional_phrase>]
 
+(* tag: present_verb，现在式 *)
+<present_verb_phrase> ::= <present_verb> [<noun_composition>] [<non_predicate_phrase>] [<prepositional_phrase>]
+
+(* tag: future_verb，将来式 *)
+<future_verb_phrase>  ::= <future_verb>   <present_verb_phrase>
+
+<adjective_phrase> ::= <adjective> | <adjective_phrase> <adjective>
+
+
+<determiner> ::= "the" | "a" | "an" 
+                 | "this" | "that" | "these" | "those" 
+                 | "my" | "your" | "his" | "her" | ...
+<noun> ::= "cat" | "dog" | "man" | "woman" | ...
 <aux_verb> ::= "do" | "does" | "did" 
              | "has" | "have" | "had" 
              | ...
+
 <time_subordinator> ::= "when" | "while" | "before" | "after" | "since" | "until" | ...
 <cause_subordinator> ::= "because" | "since" | "as" | "so that" | "in order that" | ...
 <condition_subordinator> ::= "if" | "unless" | "provided that" | "in case" | ...
 
 (* ------------------------------ *)
-<non_predicate_phrase> ::= (<infinitive> | <gerund> | <participle> ) <noun_composition>
+(* 非谓语短语 *)
+<non_predicate_phrase> ::= (<infinitive> | <gerund> | <participle> ) [<noun_composition>]
+
 
 <adjective> ::= "big" | "small" | "beautiful" | ...
 <past_verb> ::= "saw" | "ate" | "went" | ...
@@ -138,9 +174,15 @@
 
 
 ## 语感
-> <font color=#ff0044>$ <action> ::= <sentence> $</font>    
-> <font color=#ff0044>$ sentence可以终止，action收敛为终止符 $</font>    
-> <font color=#ff0044>$ 关注动作，自然可以展开出发出者，动作描述，接受者 $</font>    
+> <font color=#ff0044>$ 以终止符匹配模式，选合适的模式 $</font>    
+
+```text
+比如cpp写循环，那么会想到模式tag为for里的终止符for，
+由for可以索引到范围for和普通for的模式，再根据参数情况确定使用哪个
+(* tag: "for"，循环 *)
+"for" '(' <init_statement> [<condition>] ';' [<expression>] ')' <statement>
+"for" '(' [<init_statement>] <for_range_declaration> ':' <for_range_initializer> ')' <statement>
+```
 
 ## 元音
 <font color=#ffa500>

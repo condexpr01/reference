@@ -1,6 +1,6 @@
 
-# <font color=#ffe211> :star: cpp in ebnf  </font>
-> <font color=#39c5bb> Caution: Some rules are not implement by compiler. </font>
+# <font color=#ffe211> :star: cpp26 in ebnf  </font>
+> <font color=#39c5bb> Caution: Some rules are not yet implement by compiler. </font>
 
 
 ```ebnf

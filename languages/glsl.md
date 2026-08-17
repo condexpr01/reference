@@ -525,7 +525,7 @@ VULKAN
 	*)
 ```
 
-* layout_qualifier_id
+# layout_qualifier_id
 
 ```glsl
 //allowed interface: uniform/buffer
@@ -652,7 +652,7 @@ r16ui
 r8ui
 ```
 
-* component name
+# component name
 
 ```glsl
 {x,y,z,w} //vertex coordinate
@@ -660,7 +660,7 @@ r8ui
 {s,t,p,q} //texture coordinate
 ```
 
-* build-in variables
+# build-in variables
 ```glsl
 //vertex shader special variables
 in int gl_VertexID; // only present when not targeting Vulkan
@@ -762,7 +762,7 @@ in uvec3 gl_GlobalInvocationID;
 in uint gl_LocalInvocationIndex;
 ```
 
-* build-in constants
+# build-in constants
 
 ```glsl
 const int gl_MaxVertexAttribs = 16;
@@ -841,7 +841,7 @@ const highp int gl_MaxInputAttachments = 1; // only present when targeting Vulka
 
 ```
 
-* build-in uniform state
+# build-in uniform state
 ```glsl
 struct gl_DepthRangeParameters {
   float near; // n
@@ -852,7 +852,7 @@ uniform gl_DepthRangeParameters gl_DepthRange;
 uniform int gl_NumSamples;
 ```
 
-* build-in functions
+# build-in functions
 ```glsl
 
 radians(degrees) 

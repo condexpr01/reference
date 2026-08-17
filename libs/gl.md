@@ -102,22 +102,6 @@ class sdl_gl_ctx_manager{
 
 # ImGui
 
-## font
-```cpp
-//在imconfig.h中定义IMGUI_USE_WCHAR32以支持更大范围的字
-#define IMGUI_USE_WCHAR32
-```
-
-## size
-```cpp
-//ImGui::NewFrame前设置画布大小
-ImGui::GetIO().DisplaySize;
-ImGui::GetIO().DisplayFramebufferScale;
-
-//设置视口，渲染的画布大小
-(*ImGui::GetMainViewport()).Size;
-```
-
 ## imgui ctx
 ```cpp
 //manage sdl3 gl3 impl and imgui ctx
@@ -203,6 +187,655 @@ class sdl3_gl3_imgui_ctx_manager{
 		sdl3_gl3_imgui_ctx_manager &operator=(sdl3_gl3_imgui_ctx_manager  &s) = delete;
 		sdl3_gl3_imgui_ctx_manager &operator=(sdl3_gl3_imgui_ctx_manager &&s) = delete;
 };
+```
+
+## logic
+> 命令缓冲区: 所有调用的API最终只是在往ImDrawList数组里追加绘制图元    
+> 输入: ImGuiIO结构体，当前所有输入    
+> 哈希ID栈: ImGuiContext和哈希栈，每个控制都分配唯一ImGuiID    
+> 布局坐标: 全局的CursorPos和CursorScreenPos，每次调用控件都会在光标位置占一块    
+> 配置栈: 颜色样式字体ID前缀裁剪矩形都是通过栈管理的    
+
+```cpp
+//获取drawlist:
+
+ImDrawList* GetWindowDrawList();//get draw list associated to the current window, to append your own drawing primitives
+// Background/Foreground Draw Lists
+ImDrawList* GetBackgroundDrawList(ImGuiViewport* viewport = NULL);// get background draw list for the given viewport or viewport associated to the current window. this draw list will be the first rendering one. Useful to quickly draw shapes/text behind dear imgui contents.
+ImDrawList* GetForegroundDrawList(ImGuiViewport* viewport = NULL);// get foreground draw list for the given viewport or viewport associated to the current window. this draw list will be the top-most rendered one. Useful to quickly draw shapes/text over dear imgui contents.
+ImDrawListSharedData* GetDrawListSharedData();// you may use this when creating your own ImDrawList instances.
+
+
+// ImDrawList: 帧绘制命令构建器。你每帧调用的所有 Add* 函数，最终都转化为这里的数据。
+// 后端渲染器只需要读取 CmdBuffer/VtxBuffer/IdxBuffer 即可绘制。
+struct ImDrawList
+{
+    // ======================== 一、核心输出缓冲区（最终交给 GPU 的数据） ========================
+
+    // 绘制命令数组。每条命令定义一个裁剪矩形(ClipRect)和纹理ID(TextureId)，
+    // 并指向 VtxBuffer/IdxBuffer 中的一段范围 [ElemOffset, ElemCount)。
+    ImVector<ImDrawCmd>     CmdBuffer;
+
+    // 索引缓冲区。GPU 通过索引来复用顶点，绘制三角形。一般为 16-bit 或 32-bit。
+    ImVector<ImDrawIdx>     IdxBuffer;
+
+    // 顶点缓冲区。每个顶点包含坐标 (x,y)、UV (u,v) 和颜色 (Color)。
+    ImVector<ImDrawVert>    VtxBuffer;
+
+    // 当前 DrawList 的标志（如是否启用抗锯齿线条/填充）。
+    ImDrawListFlags         Flags;
+
+    // ======================== 二、内部运行状态（构建过程中的临时变量） ========================
+
+    // 当前顶点缓冲区的全局索引计数（即下一个顶点的序号）。用于计算 ElemOffset。
+    int                     _VtxCurrentIdx;
+
+    // 指向 ImDrawListSharedData 的指针，包含字体、缩放、抗锯齿参数等全局共享数据。
+    const ImDrawListSharedData* _Data;
+
+    // 指向 VtxBuffer 当前可写位置的指针（高性能直接写入，无需反复调用 push_back）。
+    ImDrawVert*             _VtxWritePtr;
+
+    // 指向 IdxBuffer 当前可写位置的指针。
+    ImDrawIdx*              _IdxWritePtr;
+
+    // 当前正在构建的路径顶点缓存（用于 AddCircle, AddBezier 等复杂图形）。
+    // 调用 PathLineTo 等函数时，顶点暂时存在这里，最后通过 PathStroke/Fill 转换成 VtxBuffer。
+    ImVector<ImVec2>        _Path;
+
+    // 绘制命令头信息（内部用于合并相邻同状态命令）。
+    ImDrawCmdHeader         _CmdHeader;
+
+    // 通道分割器（ChannelsSplit 功能）。用于将绘制命令分层，以便重新排序（例如先画背景层再画前景层）。
+    ImDrawListSplitter      _Splitter;
+
+    // 裁剪矩形栈。PushClipRect 压入，PopClipRect 弹出。当前栈顶决定所有 Add* 函数的绘制范围。
+    ImVector<ImVec4>        _ClipRectStack;
+
+    // 纹理 ID 栈。PushTextureID 压入，PopTextureID 弹出。默认纹理 ID 由栈顶决定，但 AddImage 可覆盖。
+    ImVector<ImTextureID>   _TextureStack;
+
+    // 回调数据缓冲区（用于 AddCallback 自定义绘制）。
+    ImVector<char>          _CallbacksDataBuf;
+
+    // 边缘缩放因子（用于字体边缘抗锯齿调整）。
+    float                   _FringeScale;
+
+    // 持有此 DrawList 的窗口名称（仅用于调试）。
+    const char*             _OwnerName;
+
+    // ======================== 三、构造/ 析构========================
+    ImDrawList();
+    ~ImDrawList();
+
+    // ======================== 四、状态栈管理（Push / Pop） ========================
+
+    // 压入裁剪矩形。后续所有绘制操作都将被限制在 (p_min, p_max) 区域内。
+    // 如果 allow_intersect=true，则与当前裁剪矩形做交集；否则直接替换。
+    void PushClipRect(const ImVec2& p_min, const ImVec2& p_max, bool allow_intersect = false);
+
+    // 压入全屏裁剪矩形（通常用于重置裁剪区域）。
+    void PushClipRectFullScreen();
+
+    // 弹出裁剪矩形，恢复上一级裁剪状态。
+    void PopClipRect();
+
+    // 压入纹理 ID。后续的 AddImage 若未指定纹理，默认使用此纹理。
+    void PushTexture(ImTextureID texture_id); // 注：实际常用名为 PushTextureID
+
+    // 弹出纹理 ID。
+    void PopTexture(); // 注：实际常用名为 PopTextureID
+
+    // 获取当前裁剪矩形的左上角。
+    ImVec2 GetClipRectMin() const;
+
+    // 获取当前裁剪矩形的右下角。
+    ImVec2 GetClipRectMax() const;
+
+    // ======================== 五、高级绘制工具（Add* 系列，你主要用的部分） ========================
+
+    // --- 直线/线段 ---
+    void AddLine(const ImVec2& p1, const ImVec2& p2, ImU32 col, float thickness = 1.0f);
+    void AddLineH(const ImVec2& p1, float x2, ImU32 col, float thickness = 1.0f); // 水平线快捷方式
+    void AddLineV(const ImVec2& p1, float y2, ImU32 col, float thickness = 1.0f); // 垂直线快捷方式
+
+    // --- 矩形 ---
+    void AddRect(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0, float thickness = 1.0f); // 描边矩形
+    void AddRectFilled(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0); // 填充矩形
+    void AddRectFilledMultiColor(const ImVec2& p_min, const ImVec2& p_max, ImU32 col_upr_left, ImU32 col_upr_right, ImU32 col_bot_right, ImU32 col_bot_left); // 四角不同颜色的渐变填充矩形
+
+    // --- 四边形 / 三角形 ---
+    void AddQuad(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col, float thickness = 1.0f);
+    void AddQuadFilled(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col);
+    void AddTriangle(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 col, float thickness = 1.0f);
+    void AddTriangleFilled(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 col);
+
+    // --- 圆形 / 椭圆 / N边形 ---
+    void AddCircle(const ImVec2& center, float radius, ImU32 col, int num_segments = 0, float thickness = 1.0f);
+    void AddCircleFilled(const ImVec2& center, float radius, ImU32 col, int num_segments = 0);
+    void AddNgon(const ImVec2& center, float radius, ImU32 col, int num_segments, float thickness = 1.0f); // 正多边形描边
+    void AddNgonFilled(const ImVec2& center, float radius, ImU32 col, int num_segments); // 正多边形填充
+    void AddEllipse(const ImVec2& center, float radius_x, float radius_y, ImU32 col, float rot = 0.0f, int num_segments = 0, float thickness = 1.0f);
+    void AddEllipseFilled(const ImVec2& center, float radius_x, float radius_y, ImU32 col, float rot = 0.0f, int num_segments = 0);
+
+    // --- 文字 ---
+    void AddText(const ImVec2& pos, ImU32 col, const char* text_begin, const char* text_end = NULL);
+    void AddText(const ImFont* font, float font_size, const ImVec2& pos, ImU32 col, const char* text_begin, const char* text_end = NULL, float wrap_width = 0.0f, const ImVec4* cpu_fine_clip_rect = NULL);
+
+    // --- 贝塞尔曲线 ---
+    void AddBezierCubic(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col, float thickness, int num_segments = 0); // 三次贝塞尔
+    void AddBezierQuadratic(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 col, float thickness, int num_segments = 0); // 二次贝塞尔
+
+    // --- 多段线 / 多边形填充（通用） ---
+    void AddPolyline(const ImVec2* points, int num_points, ImU32 col, ImDrawFlags flags, float thickness); // 折线
+    void AddConvexPolyFilled(const ImVec2* points, int num_points, ImU32 col); // 凸多边形填充（高效）
+    void AddConcavePolyFilled(const ImVec2* points, int num_points, ImU32 col); // 凹多边形填充（自动三角化，稍慢）
+
+    // --- 图像（纹理） ---
+    void AddImage(ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min = ImVec2(0,0), const ImVec2& uv_max = ImVec2(1,1), ImU32 col = IM_COL32_WHITE);
+    void AddImageQuad(ImTextureID user_texture_id, const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, const ImVec2& uv1 = ImVec2(0,0), const ImVec2& uv2 = ImVec2(1,0), const ImVec2& uv3 = ImVec2(1,1), const ImVec2& uv4 = ImVec2(0,1), ImU32 col = IM_COL32_WHITE); // 透视/旋转贴图
+    void AddImageRounded(ImTextureID user_texture_id, const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, ImU32 col, float rounding, ImDrawFlags flags = 0); // 圆角图片
+
+    // ======================== 六、路径系统（Path 构建 + Stroke/Fill） ========================
+    // 路径用于构建复杂自定义形状。先在 _Path 中描点，最后统一渲染。
+
+    void PathClear(); // 清空当前路径
+    void PathLineTo(const ImVec2& pos); // 路径添加一个直线点
+    void PathLineToMergeDuplicate(const ImVec2& pos); // 如果与最后一个点重合则不添加（去重）
+    void PathFillConvex(ImU32 col); // 将当前路径作为凸多边形填充（性能最好，需确保凸）
+    void PathFillConcave(ImU32 col); // 将当前路径作为凹多边形填充（自动三角化）
+    void PathStroke(ImU32 col, ImDrawFlags flags, float thickness); // 将当前路径作为折线描边
+    void PathArcTo(const ImVec2& center, float radius, float a_min, float a_max, int num_segments = 0); // 添加圆弧（角度制）
+    void PathArcToFast(const ImVec2& center, float radius, int a_min_of_12, int a_max_of_12); // 添加圆弧（12等分快速版本，用于性能敏感场景）
+    void PathEllipticalArcTo(const ImVec2& center, float radius_x, float radius_y, float rot, float a_min, float a_max, int num_segments = 0); // 椭圆弧
+    void PathBezierCubicCurveTo(const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, int num_segments = 0); // 三次贝塞尔曲线点
+    void PathBezierQuadraticCurveTo(const ImVec2& p2, const ImVec2& p3, int num_segments = 0); // 二次贝塞尔曲线点
+    void PathRect(const ImVec2& p_min, const ImVec2& p_max, float rounding = 0.0f, ImDrawFlags flags = 0); // 添加矩形路径
+
+    // ======================== 七、底层回调与命令控制 ========================
+
+    // 插入自定义绘制回调。允许你在 ImGui 的绘制流中插入原生图形 API（如 OpenGL 函数）代码。
+    void AddCallback(ImDrawCallback callback, void* callback_data);
+
+    // 手动添加一个空白绘制命令（一般不直接调用，由系统自动管理）。
+    void AddDrawCmd();
+
+    // ======================== 八、多通道渲染（Channels） ========================
+
+    // 分割绘制通道。用于在交错绘制时重新排序（例如：先画所有背景层，再画所有前景层）。
+    void ChannelsSplit(int channels_count);
+    // 合并绘制通道，输出到 CmdBuffer。
+    void ChannelsMerge();
+    // 切换到指定通道（索引从 0 到 channels_count-1）。
+    void ChannelsSetCurrent(int channel_index);
+
+    // ======================== 九、原始顶点/索引写入（Primitive API） ========================
+    // 跳过所有形状计算，直接向缓冲区写入裸顶点和索引。用于实现自定义着色器或特殊网格。
+
+    void PrimReserve(int idx_count, int vtx_count); // 预分配缓冲区空间
+    void PrimUnreserve(int idx_count, int vtx_count); // 回退预留空间（谨慎使用）
+    void PrimRect(const ImVec2& p_min, const ImVec2& p_max, ImU32 col); // 直接写入矩形顶点
+    void PrimRectUV(const ImVec2& p_min, const ImVec2& p_max, const ImVec2& uv_min, const ImVec2& uv_max, ImU32 col); // 写入带 UV 的矩形顶点
+    void PrimQuadUV(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, const ImVec2& uv1, const ImVec2& uv2, const ImVec2& uv3, const ImVec2& uv4, ImU32 col); // 写入任意四边形的 UV 顶点
+    void PrimWriteVtx(const ImVec2& pos, const ImVec2& uv, ImU32 col); // 写入单个顶点（需先 PrimReserve）
+    void PrimWriteIdx(ImDrawIdx idx); // 写入单个索引（需先 PrimReserve）
+    void PrimVtx(const ImVec2& pos, const ImVec2& uv, ImU32 col); // 写入顶点并自动递增索引（简易封装）
+
+    // ======================== 十、工具与克隆 ========================
+
+    // 克隆当前 DrawList 的输出数据（用于多线程或缓存）。
+    ImDrawList* CloneOutput() const;
+
+    // ======================== 十一、内部函数 ========================
+    void _SetDrawListSharedData(ImDrawListSharedData* data);
+    void _ResetForNewFrame();
+    void _ClearFreeMemory();
+    void _PopUnusedDrawCmd();
+    void _TryMergeDrawCmds();
+    void _OnChangedClipRect();
+    void _OnChangedTexture();
+    void _OnChangedVtxOffset();
+    void _SetTexture(ImTextureID texture_id);
+    int  _CalcCircleAutoSegmentCount(float radius) const;
+    void _PathArcToFastEx(const ImVec2& center, float radius, int a_min_sample, int a_max_sample, int a_step);
+    void _PathArcToN(const ImVec2& center, float radius, float a_min, float a_max, int num_segments);
+};
+```
+
+## font
+```cpp
+//在imconfig.h中定义IMGUI_USE_WCHAR32以支持更大范围的字
+#define IMGUI_USE_WCHAR32
+```
+
+## size
+```cpp
+//ImGui::NewFrame前设置画布大小
+ImGui::GetIO().DisplaySize;
+ImGui::GetIO().DisplayFramebufferScale;
+
+//设置视口，渲染的画布大小
+(*ImGui::GetMainViewport()).Size;
+```
+
+## overview
+
+```txt
+//section: forward decl and basic types
+
+//scalar data types
+ImGuiID ImS8 ImU8 ImS16 ImU16 ImS32 ImU32 ImS64 ImU64
+
+//ImDrawList, ImFontAtlas layer
+ImDrawChannel ImDrawCmd ImDrawData
+ImDrawList ImDrawListSharedData ImDrawListSplitter ImDrawVert
+ImFont ImFontAtlas ImFontAtlasBuilder ImFontAtlasRect ImFontBaked
+ImFontConfig ImFontGlyph ImFontGlyphRangesBuilder ImFontLoader
+ImTextureData ImTextureRect ImColor
+
+//ImGui layer
+ImGuiContext ImGuiIO ImGuiInputTextCallbackData ImGuiKeyData
+ImGuiListClipper ImGuiMultiSelectIO ImGuiOnceUponAFrame
+ImGuiPayload ImGuiPlatformIO ImGuiPlatformImeData
+ImGuiPlatformMonitor ImGuiSelectionBasicStorage
+ImGuiSelectionExternalStorage ImGuiSelectionRequest
+ImGuiSizeCallbackData ImGuiStorage ImGuiStoragePair
+ImGuiStyle ImGuiTableSortSpecs ImGuiTableColumnSortSpecs
+ImGuiTextBuffer ImGuiTextFilter ImGuiViewport ImGuiWindowClass
+
+//enumrations
+ImGuiDir ImGuiKey ImGuiMouseSource
+ImGuiSortDirection ImGuiCol ImGuiCond
+ImGuiDataType ImGuiMouseButton ImGuiMouseCursor
+ImGuiStyleVar ImGuiTableBgTarget
+
+//flags
+ImDrawFlags ImDrawListFlags ImDrawTextFlags
+ImFontFlags ImFontAtlasFlags ImGuiBackendFlags
+ImGuiButtonFlags ImGuiChildFlags ImGuiColorEditFlags
+ImGuiConfigFlags ImGuiComboFlags ImGuiDockNodeFlags
+ImGuiDragDropFlags ImGuiFocusedFlags ImGuiHoveredFlags
+ImGuiInputFlags ImGuiInputTextFlags ImGuiItemFlags
+ImGuiKeyChord ImGuiListClipperFlags ImGuiPopupFlags
+ImGuiMultiSelectFlags ImGuiSelectableFlags ImGuiSliderFlags
+ImGuiTabBarFlags ImGuiTabItemFlags ImGuiTableFlags
+ImGuiTableColumnFlags ImGuiTableRowFlags ImGuiTreeNodeFlags
+ImGuiViewportFlags ImGuiWindowFlags
+
+//characters types
+ImWchar32 ImWchar16 ImWchar
+
+//multi-selection item index or identifier
+ImGuiSelectionUserData
+ImGuiInputTextCallback ImGuiSizeCallback
+ImGuiMemAllocFunc ImGuiMemFreeFunc
+
+//vec
+ImVec2 ImVec4
+
+//section: texture id
+ImTextureID ImTextureRef
+
+//section: end-user api funcs
+ImGui{
+	CreateContext DestroyContext
+	GetCurrentContext SetCurrentContext
+	GetIO GetPlatformIO
+	GetStyle
+	NewFrame EndFrame
+	Render
+	GetDrawData
+	ShowDemoWindow
+	ShowMetricsWindow
+	ShowDebugLogWindow
+	ShowIDStackToolWindow
+	ShowAboutWindow
+	ShowStyleEditor
+	ShowStyleSelector
+	ShowFontSelector
+	ShowUserGuide
+	GetVersion
+	StyleColorsDark StyleColorsLight StyleColorsClassic
+	Begin End
+	BeginChild EndChild
+	IsWindowAppearing
+	IsWindowCollapsed
+	IsWindowFocused
+	IsWindowHovered
+	GetWindowDrawList
+	GetWindowDpiScale
+	GetWindowPos GetWindowSize
+	GetWindowWidth GetWindowHeight
+	GetWindowViewport
+	SetNextWindowPos SetNextWindowSize
+	SetNextWindowSizeConstraints
+	SetNextWindowContentSize
+	SetNextWindowCollapsed
+	SetNextWindowFocus
+	SetNextWindowScroll
+	SetNextWindowBgAlpha
+	SetNextWindowViewport
+	SetWindowPos SetWindowSize
+	SetWindowCollapsed
+	SetWindowFocus
+	GetScrollX GetScrollY
+	SetScrollX SetScrollY
+	GetScrollMaxX GetScrollMaxY
+	SetScrollHereX SetScrollHereY
+	SetScrollFromPosX SetScrollFromPosY
+	PushFont PopFont
+	GetFont GetFontSize GetFontBaked
+	PushStyleColor PopStyleColor
+	PushStyleVar PushStyleVarX PushStyleVarY PopStyleVar
+	PushItemFlag PopItemFlag
+	PushItemWidth PopItemWidth
+	SetNextItemWidth CalcItemWidth
+	PushTextWrapPos PopTextWrapPos
+	GetFontTexUvWhitePixel
+	GetColorU32
+	GetStyleColorVec4
+	GetCursorScreenPos SetCursorScreenPos
+	GetContentRegionAvail
+	GetCursorPos GetCursorPosX GetCursorPosY
+	SetCursorPos SetCursorPosX SetCursorPosY
+	GetCursorStartPos
+	Separator
+	SameLine
+	NewLine
+	Spacing
+	Dummy
+	Indent Unindent
+	BeginGroup EndGroup
+	AlignTextToFramePadding
+	GetTextLineHeight GetTextLineHeightWithSpacing
+	GetFrameHeight GetFrameHeightWithSpacing
+	PushID PopID GetID
+	TextUnformatted
+	Text TextV
+	TextColored TextColoredV
+	TextDisabled TextDisabledV
+	TextWrapped TextWrappedV
+	LabelText LabelTextV
+	BulletText BulletTextV
+	SeparatorText
+	Button SmallButton InvisibleButton ArrowButton
+	Checkbox CheckboxFlags
+	RadioButton
+	ProgressBar
+	Bullet
+	TextLink TextLinkOpenURL
+	Image ImageWithBg ImageButton
+	BeginCombo EndCombo Combo
+	DragFloat DragFloat2 DragFloat3 DragFloat4 DragFloatRange2
+	DragInt DragInt2 DragInt3 DragInt4 DragIntRange2
+	DragScalar DragScalarN
+	SliderFloat SliderFloat2 SliderFloat3 SliderFloat4
+	SliderAngle
+	SliderInt SliderInt2 SliderInt3 SliderInt4
+	SliderScalar SliderScalarN
+	VSliderFloat VSliderInt VSliderScalar
+	InputText InputTextMultiline InputTextWithHint
+	InputFloat InputFloat2 InputFloat3 InputFloat4
+	InputInt InputInt2 InputInt3 InputInt4
+	InputDouble InputScalar InputScalarN
+	ColorEdit3 ColorEdit4
+	ColorPicker3 ColorPicker4
+	ColorButton
+	SetColorEditOptions
+	TreeNode TreeNodeV
+	TreeNodeEx TreeNodeExV
+	TreePush TreePop
+	GetTreeNodeToLabelSpacing
+	CollapsingHeader
+	SetNextItemOpen
+	SetNextItemStorageID
+	TreeNodeGetOpen
+	Selectable
+	BeginMultiSelect EndMultiSelect
+	SetNextItemSelectionUserData
+	IsItemToggledSelection
+	BeginListBox EndListBox ListBox
+	PlotLines PlotHistogram
+	Value
+	BeginMenuBar EndMenuBar
+	BeginMainMenuBar EndMainMenuBar
+	BeginMenu EndMenu
+	MenuItem
+	BeginTooltip EndTooltip
+	SetTooltip SetTooltipV
+	BeginItemTooltip SetItemTooltip SetItemTooltipV
+	BeginPopup BeginPopupModal EndPopup
+	OpenPopup OpenPopupOnItemClick CloseCurrentPopup
+	BeginPopupContextItem BeginPopupContextWindow BeginPopupContextVoid
+	IsPopupOpen
+	BeginTable EndTable
+	TableNextRow TableNextColumn
+	TableSetColumnIndex TableSetupColumn
+	TableSetupScrollFreeze
+	TableHeader TableHeadersRow TableAngledHeadersRow
+	TableGetSortSpecs
+	TableGetColumnCount
+	TableGetColumnIndex TableGetRowIndex
+	TableGetColumnName
+	TableGetColumnFlags
+	TableSetColumnEnabled
+	TableGetHoveredColumn
+	TableSetBgColor
+	Columns
+	NextColumn
+	GetColumnIndex
+	GetColumnWidth SetColumnWidth
+	GetColumnOffset SetColumnOffset
+	GetColumnsCount
+	BeginTabBar EndTabBar
+	BeginTabItem EndTabItem
+	TabItemButton
+	SetTabItemClosed
+	DockSpace DockSpaceOverViewport
+	SetNextWindowDockID
+	SetNextWindowClass
+	GetWindowDockID
+	IsWindowDocked
+	LogToTTY
+	LogToFile
+	LogToClipboard
+	LogFinish
+	LogButtons
+	LogText LogTextV
+	BeginDragDropSource SetDragDropPayload EndDragDropSource
+	BeginDragDropTarget AcceptDragDropPayload EndDragDropTarget
+	GetDragDropPayload
+	BeginDisabled EndDisabled
+	PushClipRect PopClipRect
+	SetItemDefaultFocus
+	SetKeyboardFocusHere
+	SetNavCursorVisible
+	SetNextItemAllowOverlap
+	IsItemHovered
+	IsItemActive
+	IsItemFocused
+	IsItemClicked
+	IsItemVisible
+	IsItemEdited
+	IsItemActivated
+	IsItemDeactivated
+	IsItemDeactivatedAfterEdit
+	IsItemToggledOpen
+	IsAnyItemHovered
+	IsAnyItemActive
+	IsAnyItemFocused
+	GetItemID
+	GetItemRectMin GetItemRectMax
+	GetItemRectSize
+	GetItemFlags
+	GetMainViewport
+	GetBackgroundDrawList GetForegroundDrawList
+	IsRectVisible
+	GetTime
+	GetFrameCount
+	GetDrawListSharedData
+	GetStyleColorName
+	SetStateStorage
+	GetStateStorage
+	CalcTextSize
+	ColorConvertU32ToFloat4
+	ColorConvertFloat4ToU32
+	ColorConvertRGBtoHSV
+	ColorConvertHSVtoRGB
+	IsKeyDown
+	IsKeyPressed
+	IsKeyReleased
+	IsKeyChordPressed
+	GetKeyPressedAmount
+	GetKeyName
+	SetNextFrameWantCaptureKeyboard
+	Shortcut
+	SetNextItemShortcut
+	SetItemKeyOwner
+	IsMouseDown
+	IsMouseClicked
+	IsMouseReleased
+	IsMouseDoubleClicked
+	IsMouseReleasedWithDelay
+	GetMouseClickedCount
+	IsMouseHoveringRect
+	IsMousePosValid
+	IsAnyMouseDown
+	GetMousePos GetMousePosOnOpeningCurrentPopup
+	IsMouseDragging
+	GetMouseDragDelta
+	ResetMouseDragDelta
+	GetMouseCursor SetMouseCursor
+	SetNextFrameWantCaptureMouse
+	GetClipboardText SetClipboardText
+	LoadIniSettingsFromDisk LoadIniSettingsFromMemory
+	SaveIniSettingsToDisk SaveIniSettingsToMemory
+	DebugTextEncoding
+	DebugFlashStyleColor
+	DebugStartItemPicker
+	DebugCheckVersionAndDataLayout
+	DebugLog DebugLogV
+	SetAllocatorFunctions GetAllocatorFunctions
+	MemAlloc MemFree
+	UpdatePlatformWindows
+	RenderPlatformWindowsDefault
+	DestroyPlatformWindows
+	FindViewportByID FindViewportByPlatformHandle
+}
+
+//section: frags & enumerations
+ImGuiWindowFlags_
+ImGuiChildFlags_
+ImGuiItemFlags_
+ImGuiInputTextFlags_
+ImGuiTreeNodeFlags_
+ImGuiPopupFlags_
+ImGuiSelectableFlags_
+ImGuiComboFlags_
+ImGuiTabBarFlags_
+ImGuiTabItemFlags_
+ImGuiFocusedFlags_
+ImGuiHoveredFlags_
+ImGuiDockNodeFlags_
+ImGuiDragDropFlags_
+ImGuiDataType_
+ImGuiDir
+ImGuiSortDirection
+ImGuiKey
+ImGuiInputFlags_
+ImGuiConfigFlags_
+ImGuiBackendFlags_
+ImGuiCol_
+ImGuiStyleVar_
+ImGuiButtonFlags_
+ImGuiColorEditFlags_
+ImGuiSliderFlags_
+ImGuiMouseButton_
+ImGuiMouseCursor_
+ImGuiMouseSource
+ImGuiCond_
+
+//section: tables flags & structures
+ImGuiTableFlags_
+ImGuiTableColumnFlags_
+ImGuiTableRowFlags_
+ImGuiTableBgTarget_
+ImGuiTableSortSpecs
+ImGuiTableColumnSortSpecs
+
+//vector
+ImVector
+
+//sections: style
+ImGuiStyle
+
+//sections: IO
+ImGuiKeyData
+ImGuiIO
+
+//sections: misc data structures
+ImGuiInputTextCallbackData
+ImGuiSizeCallbackData
+ImGuiWindowClass
+ImGuiPayload
+
+//sections: helpers
+ImGuiOnceUponAFrame
+ImGuiTextFilter
+ImGuiTextBuffer
+ImGuiStoragePair
+ImGuiStorage
+ImGuiListClipperFlags_
+ImGuiListClipper
+ImColor
+
+//sections: multi-select api
+ImGuiMultiSelectFlags_
+ImGuiMultiSelectIO
+ImGuiSelectionRequestType
+ImGuiSelectionRequest
+ImGuiSelectionBasicStorage
+ImGuiSelectionExternalStorage
+
+//sections: drawing api
+ImDrawIdx
+ImDrawCallback
+ImDrawCmd
+ImDrawVert
+ImDrawCmdHeader
+ImDrawChannel
+ImDrawListSplitter
+ImDrawFlags_
+ImDrawListFlags_
+ImDrawList
+ImDrawData
+
+//sections: texture api
+ImTextureFormat
+ImTextureStatus
+ImTextureRect
+ImTextureData
+
+//sections: font api
+ImFontConfig
+ImFontGlyph
+ImFontGlyphRangesBuilder
+ImFontAtlasRectId
+ImFontAtlasRect
+ImFontAtlasFlags_
+ImFontAtlas
+ImFontBaked
+ImFontFlags_
+ImFont
+
+//sections: viewports
+ImGuiViewportFlags_
+ImGuiViewport
+
+//sections: Imgui platformio + other platform dependent interfaces
+ImGuiPlatformIO
+ImGuiPlatformMonitor
+ImGuiPlatformImeData
 ```
 
 # GLM
@@ -420,7 +1053,7 @@ void glDisableVertexArrayAttrib(GLuint vaobj,GLuint index);
 //glVertexAttrib.*:
 //指定插槽一个固定的值
 
-//定义插槽的顶点属性数据
+//定义插槽的顶点属性数据, 必须绑定GL_ARRAY_BUFFER在之前
 //index: 要被修改的插槽索引
 //size: [1-4]
 //

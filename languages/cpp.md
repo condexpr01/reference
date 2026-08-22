@@ -4991,10 +4991,14 @@ namespace std {
 namespace std {
   namespace chrono {
     //duration:时间区间
+	//Rep: 时间长度的数据表示类型
+	//period = 1s * ratio
     template<class Rep, class Period = ratio<1>>
       class duration;
  
-    //time_point:时间点
+    //time_point:时间点, clock_timepoint + n * duration
+	//Clock: 参考时钟
+	//duration: 用来表示time_point从clock_timepoint开始的区间的类型
     template<class Clock, class Duration = typename Clock::duration>
       class time_point;
   }

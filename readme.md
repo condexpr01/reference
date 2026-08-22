@@ -18,27 +18,41 @@ e.g.: /usr/bin/ref microsoft-edge-stable cpp
 * overview
 
 ```shell
-.
 ├── color
 │   └── color.md
 ├── ds
 │   └── ds.md
 ├── languages
-│   ├── +cmakelist.md
+│   ├── cmakelists.md
 │   ├── c.md
 │   ├── cpp.md
 │   ├── ebnf.md
+│   ├── glsl.md
 │   ├── json.md
 │   ├── lua.md
-│   ├── +makefile.md
+│   ├── makefile.md
 │   ├── markdown.md
 │   ├── py.md
 │   ├── regexp.md
 │   ├── res
 │   │   └── markdown_rc
+│   │       └── pictures
+│   │           ├── sign-1.png
+│   │           ├── sign-2.png
+│   │           ├── sign-3.png
+│   │           ├── sign-4.png
+│   │           ├── sign-5.png
+│   │           ├── sign-6.png
+│   │           ├── sign-7.png
+│   │           └── sign-8.png
 │   ├── shell.md
-│   ├── +unix.md
+│   ├── xml.md
 │   └── yaml.md
+├── libs
+│   ├── gl.md
+│   ├── sdl.cpp
+│   └── sdl.md
+├── LICENSE.txt
 ├── major
 │   ├── antiq60.md
 │   ├── antiq60translate.md
@@ -60,11 +74,13 @@ e.g.: /usr/bin/ref microsoft-edge-stable cpp
 │   ├── english.md
 │   ├── math.md
 │   ├── physics.md
-│   └── review.md
+│   ├── review.md
+│   └── voice-theory.md
+├── PKGBUILD
+├── readme.md
+├── ref
 └── tools
-    ├── +blender.md
-    ├── +docker.md
-    ├── +gdb.md
-    ├── +git.md
+    ├── gdb.md
+    ├── git.md
     └── vim.md
 ```

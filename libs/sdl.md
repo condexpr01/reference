@@ -944,6 +944,7 @@ bool SDL_StopHapticRumble(SDL_Haptic *haptic);
 // ██╔══██║ ██║   ██║ ██║  ██║ ██║ ██║   ██║
 // ██║  ██║ ╚██████╔╝ ██████╔╝ ██║ ╚██████╔╝
 // ╚═╝  ╚═╝  ╚═════╝  ╚═════╝  ╚═╝  ╚═════╝
+#define SDL_AUDIO_FRAMESIZE(x) (SDL_AUDIO_BYTESIZE((x).format) * (x).channels)
 // Use this function to get the number of built-in audio drivers.
 int SDL_GetNumAudioDrivers(void);
 // Use this function to get the name of a built in audio driver.

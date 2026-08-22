@@ -12,6 +12,8 @@ until #u执行到特定行或循环结束
 stepi/nexti #汇编单步
 
 break/continue #b/c断点
+info breakpoints #查看断点
+delete #删除断点
 
 frame     #f选择和打印栈帧
 backtrace #bt回溯调用栈,-full完整的回溯

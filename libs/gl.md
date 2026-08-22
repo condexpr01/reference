@@ -194,6 +194,7 @@ class sdl3_gl3_imgui_ctx_manager{
 > 输入: ImGuiIO结构体，当前所有输入    
 > 哈希ID栈: ImGuiContext和哈希栈，每个控制都分配唯一ImGuiID    
 > 布局坐标: 全局的CursorPos和CursorScreenPos，每次调用控件都会在光标位置占一块    
+> 可用空间: GetContentRegionAvail获取当前窗口可以用的内容空间    
 > 配置栈: 颜色样式字体ID前缀裁剪矩形都是通过栈管理的    
 
 ```cpp

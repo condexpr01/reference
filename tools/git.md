@@ -26,3 +26,6 @@ rebase(使节点成为当前HEAD的基)
 merge(使节点与当前节点合并)
 
 HEAD相对位置(^:上一个,~n:上n个)
+
+clone --depth=1 repo #浅克隆
+clone --filter=blob:none --no-checkout repo #方便稀疏检出的克隆

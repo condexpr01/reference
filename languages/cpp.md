@@ -1972,7 +1972,7 @@
 > <font color=#39c5bb>最大值=容量-1</font>    
 > <font color=#39c5bb>字节容量转换:$(2)^8 = (2^4)^2 < (2^3)^3 $</font>    
 
-## <font color=#ffe211> :sparkles: 端序 </font>
+## <font color=#ffe211> :sparkles: 端序endian </font>
 ```c
 do{
 	std::uint16_t v=1;
@@ -3990,7 +3990,7 @@ void eg(){
 ## <font color=#ffe211> :sparkles: 指针 </font>
 
 ```cpp
-//指针和数字本质上无异, 完全等价用uinptr_t+类型转换
+//指针和数字本质上无异, 完全等价用uintptr_t+类型转换
 
 //cpp追求RAII
 //栈上的变量用普通指针
@@ -4313,7 +4313,7 @@ return 返回具有与返回类类型类型相同的名字
 
 //###std::jthread
 //RAII版的std::thread，可以接受callable对象的第一个参数为std::stop_token
-//会传入内部std::stop_source的get_token作为第一个参数
+//会传入内部std::stop_source的get_token方法返回值作为第一个参数
 
 //jthread::get_stop_source 内部stop_source对象
 //jthread::get_stop_token  内部stop_source.get_token
@@ -4383,6 +4383,22 @@ public:
 
 	~worker()=default;
 };
+
+//类里控制使用woker线程
+/*cmd_worker cworker_ctl{};
+  std::jthread cworker{[this](std::stop_token stoken){
+	  (*this).cworker_ctl.worker_func(stoken);
+  }};*/
+
+//运行worker
+/*
+{//write lock
+	std::lock_guard<std::mutex> write_lock(ctx.cworker_ctl.status.mtx);
+	ctx.cworker_ctl.cmd.assign(command.data(), command.size());
+}
+ctx.cworker_ctl.try_to_wake_up_worker();
+std::this_thread::yield();
+*/
 ```
 
 # <font color=#ffe211>:star: 库 </font>

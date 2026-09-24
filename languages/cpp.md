@@ -4043,27 +4043,28 @@ void process_vm_readv_pointer(
 	}
 }
 
-//1级以上指针链
-//f(a,b)  = *a + b
-//content = * f(    base+pointer_offset,0)
-//content = * f(f(  base+pointer_offset,0),addr1)
-//content = * f(f(f(base+pointer_offset,0),addr1),addr2)
-//...
+//指针链
+//e.g. int a = 39, *b = &a, **c=&b;
+//39 = dpc(getpid(),(uintptr_t)&a,0)
+//39 = dpc(getpid(),(uintptr_t)&b,0,0)
+//39 = dpc(getpid(),(uintptr_t)&c,0,0,0)
 template <typename content_type, std::convertible_to<std::uintptr_t> ...T>
-content_type dereference_pointer_chain(pid_t pid, uintptr_t base, uintptr_t pointer_offset, T ...addr){
+content_type dereference_pointer_chain(pid_t pid, uintptr_t base, uintptr_t base_offset, T ...pointer_offset){
 
 	struct iovec rvec{};
 	uintptr_t lvec_content{};
 	struct iovec lvec{&lvec_content,sizeof(lvec_content)};
 
-	rvec.iov_base = reinterpret_cast<void*>(base + pointer_offset);
+	rvec.iov_base = reinterpret_cast<void*>(base + base_offset);
 	rvec.iov_len = sizeof(lvec_content);
 
-	//0->1级
-	process_vm_readv_pointer(pid,lvec,rvec,0);
-
-	//1->2级以上
-	(process_vm_readv_pointer(pid,lvec,rvec,addr),...);
+	//分级解引用
+	//level0 base+bo
+	//level1 *(base+bo)+po1
+	//level2 *(*(base+bo)+po1)+po2
+	//level3 *(*(*(base+bo)+po1)+po2)+po3
+	//...
+	(process_vm_readv_pointer(pid,lvec,rvec,pointer_offset),...);
 
 	//return
 	content_type content{};
@@ -4073,6 +4074,7 @@ content_type dereference_pointer_chain(pid_t pid, uintptr_t base, uintptr_t poin
 	if(process_vm_readv(pid,&lvec,1,&rvec,1,0) != lvec.iov_len){
 		throw std::runtime_error{std::strerror(errno)};
 	}
+
 	return content;
 }
 ```
@@ -4190,6 +4192,8 @@ return 返回具有与返回类类型类型相同的名字
 //资源获取即初始化RAII
 //利用对象构造和析构自动管理资源
 //将资源的生命周期与一个对象的生存期相绑定
+
+//指针等资源释放后，变量清空，防止二次释放
 ```
 
 ## <font color=#ffe211> :sparkles: CRTP</font>
@@ -4218,6 +4222,7 @@ return 返回具有与返回类类型类型相同的名字
 ## <font color=#ffe211> :sparkles: Rule of 3/5/0</font>
 
 ```cpp
+//现代没有场景会使用3, 应该使用50
 //3:(&)[复制构造、复制赋值operater=]，析构，三者同时定义
 
 //5:(&)[复制构造、复制赋值operater=]、
@@ -4341,9 +4346,10 @@ public:
 	} status{};
 
 	void worker_func(std::stop_token stoken){
-		std::unique_lock<std::mutex> lock{status.mtx};
 
 		while(true){
+			std::unique_lock<std::mutex> lock{status.mtx};
+
 			status.cv.wait(lock,stoken,status.get_status());
 
 			//quit
@@ -4357,9 +4363,11 @@ public:
 	}
 
 	void force_to_wake_up_worker(){
-		std::lock_guard<std::mutex> lock{status.mtx};
+		std::unique_lock<std::mutex> lock(status.mtx);
 
 		status.has_jobs = true;
+
+		lock.unlock();
 		status.cv.notify_all();
 	}
 
@@ -4368,6 +4376,8 @@ public:
 
 		if(lock.owns_lock()){
 			status.has_jobs = true;
+
+			lock.unlock();
 			status.cv.notify_one();
 		}
 	}
@@ -4375,9 +4385,11 @@ public:
 	//need to wakeup before thread join
 	//manually call or use stop_token
 	void release_worker(){
-		std::lock_guard<std::mutex> lock{status.mtx};
+		std::unique_lock<std::mutex> lock(status.mtx);
 
 		status.done = true;
+
+		lock.unlock();
 		status.cv.notify_all();
 	}
 
@@ -12351,7 +12363,7 @@ int iswpunct(wint_t wc);//[!"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]
 (***************************************)
 <arg_id>        ::= <integer>
 <format_spec>   ::= 
-	[[<fill>] <align>] [<sign>] ["#"] ["0"] [<width>] ["." <precision>] [<type>]
+	[<fill>] <align>] [<sign>] ["#"] ["0"] [<width>] ["." <precision>] [<type>]
 
 (***************************************)
 <integer>       ::= [0-9]+

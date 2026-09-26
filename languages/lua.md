@@ -270,6 +270,42 @@
 > <font color=#39c5bb> 形参中...可以直接用...表示,类似cpp形参包,可如pairs({...})写法 </font>    
 
 
+# <font color=#ffe211>:star: 调用C API </font>
+
+```c
+#include <lua.h> //提供类型等定义
+#include <lauxlib.h> //luaL_函数定义,
+
+int func_add(lua_State *L){
+	//使用luaL_check*,luaL_opt*,lua_to*取参数
+	double a = luaL_checknumber(L,1);
+	double b = luaL_checknumber(L,2);
+
+	//lua_pop, lua_remove可以栈上pop
+
+	//压入值, lua_push*
+	lua_pushnumber(L, a+b);
+
+	//返回压入的返回值个数
+	return 1;
+}
+
+//函数注册表
+struct luaL_Reg reg[] = {
+	{"add",func_add}, //name, func
+	{NULL,NULL} //必须以NULL,NULL结尾
+};
+
+//lua require加载时的库入口, luaopen_<name>
+int luaopen_testlib(lua_State *L){
+	//lua_new*建立对象, 并压栈
+	luaL_newlib(L, reg);
+
+	//一个返回值：函数表
+	return 1;
+}
+```
+
 # <font color=#ffe211>:star: 标准库 </font>
 
 ## <font color=#ffe211>:sparkles: basic </font>

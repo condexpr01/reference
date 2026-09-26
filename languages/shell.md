@@ -220,6 +220,12 @@ a:all ugo
 目录:基准0777, 令0777 & ~$(umask)为最终权限
 ```
 
+# 提前加载
+
+```shell
+LD_PRELOAD环境变量可以使提前加载库
+```
+
 
 <font color=#ff0044>
 <center>Written by Vito Devlin:tada:</center>

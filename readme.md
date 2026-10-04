@@ -23,28 +23,18 @@ e.g.: /usr/bin/ref microsoft-edge-stable cpp
 ├── ds
 │   └── ds.md
 ├── languages
-│   ├── cmakelists.md
+│   ├── asm.md
+│   ├── cmake.md
 │   ├── c.md
 │   ├── cpp.md
 │   ├── ebnf.md
 │   ├── glsl.md
 │   ├── json.md
 │   ├── lua.md
-│   ├── makefile.md
+│   ├── make.md
 │   ├── markdown.md
 │   ├── py.md
 │   ├── regexp.md
-│   ├── res
-│   │   └── markdown_rc
-│   │       └── pictures
-│   │           ├── sign-1.png
-│   │           ├── sign-2.png
-│   │           ├── sign-3.png
-│   │           ├── sign-4.png
-│   │           ├── sign-5.png
-│   │           ├── sign-6.png
-│   │           ├── sign-7.png
-│   │           └── sign-8.png
 │   ├── shell.md
 │   ├── xml.md
 │   └── yaml.md
@@ -52,33 +42,20 @@ e.g.: /usr/bin/ref microsoft-edge-stable cpp
 │   ├── gl.md
 │   ├── sdl.cpp
 │   └── sdl.md
-├── LICENSE.txt
 ├── major
 │   ├── antiq60.md
 │   ├── antiq60translate.md
 │   ├── biology.md
 │   ├── chem.md
 │   ├── chinese.md
-│   ├── colorful_pdf
-│   │   ├── 60.md.pdf
-│   │   ├── 60translate.md.pdf
-│   │   ├── biology.md.pdf
-│   │   ├── chem.md.pdf
-│   │   ├── chinese.md.pdf
-│   │   ├── electrode_potential.md.pdf
-│   │   ├── english.md.pdf
-│   │   ├── math.md.pdf
-│   │   ├── physics.md.pdf
-│   │   └── review.md.pdf
 │   ├── electrode_potential.md
 │   ├── english.md
 │   ├── math.md
 │   ├── physics.md
 │   ├── review.md
+│   ├── tcpip.md
 │   └── voice-theory.md
-├── PKGBUILD
 ├── readme.md
-├── ref
 └── tools
     ├── gdb.md
     ├── git.md

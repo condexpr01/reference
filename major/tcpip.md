@@ -46,17 +46,26 @@
 > 分用：在每个阶段逆处理首部尾部信息    
 
 ### 数据链路封装：
-> FCS(frame check sequence): CRC(cyclic redundancy check)算法算出的余数校验值    
-> DSAP/SSAP(destination/source service access point)    
-> OUI(organizationally unique identifier)    
-> LLC(logical link control): [DSAP 1B] [SSAP 1B] [control 1B]    
-> SNAP(SubNetwork Access Protocol): [OUI 3B] [protocol type 2B]    
-> TPID(tag protocol identifier): 0x8100    
+
+> radiotap: [版本 1B][填充 1B][长度 2B][存在字段 4B][字段数据 变长]    
+
+> [FCS](frame check sequence): CRC(cyclic redundancy check)算法算出的余数校验值    
+> [DSAP]/[SSAP](destination/source service access point)    
+> [OUI](organizationally unique identifier)    
+> [LLC](logical link control): [DSAP 1B] [SSAP 1B] [control 1B]    
+> [SNAP](SubNetwork Access Protocol): [OUI 3B] [protocol type 2B]    
+> [TPID](tag protocol identifier): 0x8100    
+> [TCI](tag control information): [PCP(priority code point) 3bit] [DEI(drop eligible indicator) 1bit] [VID(vlan id) 12bit]    
+> [Frame control]: [Version 2b][Type 2b][Subtype 4b][To DS 1b][From DS 1b][More Frag 1b][Retry 1b][Power Mgmt 1b][More Data 1b][Protected 1b][Order 1b]    
+> (RFC 894) Ethernet II: [目的MAC 6B] [源MAC 6B] [类型 2B] [数据+填充 46~1500B] [FCS 4B]    
+> (RFC 1042) IEEE 802.3: [目的MAC 6B] [源MAC 6B] [长度 2B]    
+> (IEEE std) IEEE 802.11:[Frame Control 2B][Duration 2B][Addr1-recv 6B][Addr2-send 6B][Addr3-dst/src 6B][Seq 2B][QoS 2B]    
+> (RFC 1042) IEEE 802.2: [LLC 3B] [SNAP 5B] [数据+填充 38~1492B] [FCS 4B]    
+> (IEEE 802.1Q) VLAN:    [目的MAC 6B] [源MAC 6B] [TPID=0x8100] [TCI 2B] [类型 2B] [数据+填充 46~1500B] [FCS 4B]    
 > VLAN(virtual local area network)    
-> TCI(tag control information): [PCP(priority code point) 3bit] [DEI(drop eligible indicator) 1bit] [VID(vlan id) 12bit]    
-> (RFC 894) Ethernet II:       [目的MAC 6B] [源MAC 6B] [类型 2B] [数据+填充 46~1500B] [FCS 4B]    
-> (RFC 1042) IEEE 802.3/802.2: [目的MAC 6B] [源MAC 6B] [长度 2B] [LLC 3B] [SNAP 5B] [数据+填充 38~1492B] [FCS 4B]    
-> (IEEE 802.1Q) VLAN:          [目的MAC 6B] [源MAC 6B] [TPID=0x8100] [TCI 2B] [类型 2B] [数据+填充 46~1500B] [FCS 4B]    
+> DS(distribution system): 分发系统    
+> AP(access point): 访问点    
+> BSSID(basic service set id): 服务集标识    
 
 > SLIP(serial line internet protocol)/CSLIP(compressed SLIP): END(0xc0/0xdbdc转义),0xdb转义为0xdbdd    
 > PPP(point to point protocol): 
@@ -429,8 +438,8 @@
 
 > HTTP(hyper text transfer protocol): TCP/80    
 > 帧: [起始行/状态行][若干头][空行][体]    
-> 起始行: [方法][空格][URL][空格][HTTP版本][CRLF]    
-> 状态行: [HTTP版本][空格][状态码][空格][原因短语][CRLF]    
+> 请求起始行: [方法][空格][URL][空格][HTTP版本][CRLF]    
+> 响应状态行: [HTTP版本][空格][状态码][空格][原因短语][CRLF]    
 > 头格式: [字段名]:[空格][字段值][CRLF]    
 > URL(uniform resource locator): [协议]://[主机][:端口][/路径][?查询串][#锚点]    
 > URN(uniform resource name): urn:[命名空间]:[特定名字]    

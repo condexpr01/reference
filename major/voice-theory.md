@@ -136,3 +136,37 @@ IF n ∈ {2, 3, 6, 7}:
 * 转位和弦
 > 转位和弦 = 同样的音，换不同的低音，产生不同的音响层次和功能
 
+# open utau
+
+* wav
+```sh
+ffmpeg -i name.wav -ac 1 -ar 44100 -c:a pcm_s16le out.wav
+```
+
+* oto.ini
+
+> 每个oto.ini管理同目录下的wav    
+
+> 别名: wav别名    
+> 左/右边界: 开始结束    
+> 固定区间: 不被拉长等的区间(辅音)    
+> 先行发声: 固定区间(辅音结束元音开始)    
+> 重叠: 开头交叉的淡入淡出区间    
+
+```ini
+名字.wav=别名,左边界,固定区间,右边界,先行发声,重叠
+```
+
+* character.yaml
+
+> 配置文件    
+> 优先级高于character.txt    
+
+```yaml
+text_file_encoding: utf-8
+portrait_opacity: 0.67
+portrait_height: 0
+name: allium
+image: icon.jpg
+author: condexpr01
+```

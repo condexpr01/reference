@@ -92,8 +92,10 @@
 |<font color=#39c5bb>"{register}p</font>|<font color=#ffa500>粘贴寄存器 x 中的内容</font>|
 |<font color=#39c5bb>"{register}P</font>|<font color=#ffa500>粘贴寄存器 x 中的内容</font>|
 |<font color=#39c5bb>"+y</font>|<font color=#ffa500>复制内容到系统剪贴板寄存器</font>|
+|<font color=#39c5bb>"+Y</font>|<font color=#ffa500>复制内容到系统剪贴板寄存器</font>|
 |<font color=#39c5bb>"+p</font>|<font color=#ffa500>粘贴系统剪贴板寄存器的内容</font>|
 |<font color=#39c5bb>"+P</font>|<font color=#ffa500>粘贴系统剪贴板寄存器的内容</font>|
+|<font color=#39c5bb>ctrl-r{register}</font>|<font color=#ffa500>命令模式粘贴寄存器的内容</font>|
 
 ## :sparkles: indent :sparkles:
 |<font color=#39c5bb>={motion}</font>|<font color=#ffa500>自动缩进</font>|

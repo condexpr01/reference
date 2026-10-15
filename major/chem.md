@@ -647,6 +647,95 @@ $ \overset{化合价}{ ^{质量数} _{质子数} E ^{电荷数} _{原子数} }$
 }
 ```
 
+## Open SMILES in EBNF
+> Simplified molecular input line entry system    
+
+```ebnf
+<smiles> ::= <terminator> | <chain> <terminator>
+
+(***************************************)
+<chain> ::= <branched_atom> 
+          | <chain> <branched_atom>
+          | <chain> <bond> <branched_atom>
+          | <chain> <dot>  <branched_atom>
+
+<terminator> ::= <SPACE> | <TAB> | <LINEFEED> | <CARRIAGE_RETURN> | <END_OF_STRING>
+
+(***************************************)
+(* 不形成键 *)
+<dot> ::= '.'
+
+(* 单键，双键，三键，四键，芳香键，方向键，方向键 *)
+<bond> ::= '-' | '=' | '#' | '$' | ':' | '/' | '\'
+
+<branched_atom> ::= <atom> {<ringbond>} {<branch>}
+
+(***************************************)
+(* 环 *)
+<ringbond> ::= [<bond>] <DIGIT> | <bond> '%' <DIGIT> <DIGIT>
+
+(* 分支 *)
+<branch> ::= '(' <chain> ')' | '(' <bond> <chain> ')' | '(' <dot> <chain> ')'
+
+(* 原子, *表示任意原子 *)
+<atom> ::= <bracket_atom> | <aliphatic_organic> | <aromatic_organic> | '*'
+
+(***************************************)
+
+<bracket_atom> ::= '[' [<isotope>] <symbol> [<chiral>] [<hcount>] [<charge>] [<class>] ']'
+
+(* 脂类 *)
+<aliphatic_organic> ::= 'B' | 'C' | 'N' | 'O' | 'S' | 'P' | 'F' | 'Cl' | 'Br' | 'I'
+
+(* 芳香 *)
+<aromatic_organic> ::= 'b' | 'c' | 'n' | 'o' | 's' | 'p'
+
+(***************************************)
+
+<symbol> ::= <element_symbols> | <aromatic_symbols> | '*'
+
+(***************************************)
+<element_symbols> ::= 
+  'H'  | 'He' | 'Li' | 'Be' | 'B' 
+| 'C'  | 'N'  | 'O'  | 'F'  | 'Ne' 
+|'Na'  | 'Mg' | 'Al' | 'Si' | 'P'
+| 'S'  | 'Cl' | 'Ar' | 'K'  | 'Ca'
+| 'Sc' | 'Ti' | 'V'  | 'Cr' | 'Mn'
+| 'Fe' | 'Co' | 'Ni' | 'Cu' | 'Zn'
+| 'Ga' | 'Ge' | 'As' | 'Se' | 'Br'| 'Kr'
+| 'Rb' | 'Sr' | 'Y'  | 'Zr' | 'Nb'
+| 'Mo' | 'Tc' | 'Ru' | 'Rh' | 'Pd' 
+| 'Ag' | 'Cd' | 'In' | 'Sn' | 'Sb' | 'Te' | 'I' | 'Xe' 
+| 'Cs' | 'Ba' | 'Hf' | 'Ta' | 'W' 
+| 'Re' | 'Os' | 'Ir' | 'Pt' | 'Au' 
+| 'Hg' | 'Tl' | 'Pb' | 'Bi' | 'Po' | 'At' | 'Rn'
+| 'Fr' | 'Ra' | 'Rf' | 'Db' | 'Sg' | 'Bh' | 'Hs' | 'Mt' | 'Ds' | 'Rg' | 'Cn' | 'Fl'
+| 'Lv' | 'La' | 'Ce' | 'Pr' | 'Nd' | 'Pm' | 'Sm' | 'Eu' | 'Gd' | 'Tb' | 'Dy' | 'Ho'
+| 'Er' | 'Tm' | 'Yb' | 'Lu' | 'Ac' | 'Th' | 'Pa' | 'U'  | 'Np' | 'Pu' | 'Am' | 'Cm'
+| 'Bk' | 'Cf' | 'Es' | 'Fm' | 'Md' | 'No' | 'Lr'
+
+(* 同位素 *)
+<isotope> ::= <NUMBER>
+
+<aromatic_symbols> ::= 'b' | 'c' | 'n' | 'o' | 'p' | 's' | 'se' | 'as'
+
+<chiral> ::= '@' | '@@' 
+    | '@TH1' | '@TH2'
+    | '@AL1' | '@AL2'
+    | '@SP1' | '@SP2' | '@SP3'
+    | '@TB1' | '@TB2' | '@TB3' | … | '@TB20' 
+    | '@OH1' | '@OH2' | '@OH3' | … | '@OH30' 
+    | '@TB' <DIGIT> <DIGIT> | '@OH' <DIGIT> <DIGIT>
+
+<hcount> ::= 'H' | 'H' <DIGIT>
+
+<charge> ::= '-' | '-' [<DIGIT>] <DIGIT> 
+           | '+' | '+' [<DIGIT>] <DIGIT> 
+           | '--' deprecated | '++' deprecated
+
+<class> ::= ':' <NUMBER>
+```
+
 
 
 <font color=#ff0044>

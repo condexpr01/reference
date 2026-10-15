@@ -207,7 +207,7 @@
 |<font color=#39c5bb>g;</font>|<font color=#ffa500>转到修改历史列表较旧的位置</font>|
 |<font color=#39c5bb>U</font>|<font color=#ffa500>恢复/撤销最后修改的行</font>|
 |<font color=#39c5bb>H</font>|<font color=#ffa500>移动到当前页面顶部</font>|
-|<font color=#39c5bb>I</font>|<font color=#ffa500>从行首开始插入字符</font>|
+|<font color=#39c5bb>I</font>|<font color=#ffa500>从行首开始插入字符/块模式下添加前缀</font>|
 |<font color=#39c5bb>J</font>|<font color=#ffa500>将下一行合并到当前行，并在两部分文本之间插入一个空格</font>|
 |<font color=#39c5bb>K</font>|<font color=#ffa500>打开光标所在单词对应的 man 页面</font>|
 |<font color=#39c5bb>L</font>|<font color=#ffa500>移动到当前页面底部</font>|

@@ -162,11 +162,12 @@
     | 'if' <named_expression> ':' <block> [<else_block>] 
 
 (* 类定义,可带装饰器 *)
-(* 带装饰器相当于:decorator(func)(*args,**kwargs) *)
+(* 带装饰器相当于: decorator(func)(*args,**kwargs) *)
 <class_def> ::= [<decorators>] <class_def_raw> 
 
 (* 自动调用with_item的__enter__()和__exit__()方法 *)
 (* 异步需要加上async *)
+(* 异步版自动调用with_item的__aenter__()和__aexit__()方法 *)
 <with_stmt> ::=
       'with' '(' <with_item> {',' <with_item>} [','] ')' ':' [<TYPE_COMMENT>] <block> 
     | 'with'     <with_item> {',' <with_item>}           ':' [<TYPE_COMMENT>] <block> 

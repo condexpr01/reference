@@ -273,6 +273,26 @@
 # <font color=#ffe211>:star: 调用C API </font>
 
 ```c
+//API规范
+
+#define LUA_API
+#define LUALIB_API LUA_API
+
+#define LUA_NUMBER double
+#define LUA_INTEGER long long
+
+typedef LUA_NUMBER lua_Number;
+typedef LUA_INTEGER lua_Integer;
+
+typedef struct lua_State lua_State;
+typedef int (*lua_CFunction) (lua_State *L);
+typedef struct luaL_Reg {
+	const char *name;
+	lua_CFunction func;
+} luaL_Reg;
+```
+
+```c
 #include <lua.h> //提供类型等定义
 #include <lauxlib.h> //luaL_函数定义,
 
